@@ -411,9 +411,6 @@ class CoapEndpoint():
 
 class CoapContext():
 	def __init__(self):
-		if not contexts:
-			coap_startup()
-		
 		contexts.append(self)
 		
 		self.lcoap_ctx = coap_new_context(None);

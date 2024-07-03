@@ -3,6 +3,7 @@ import os, sys, enum
 import ctypes as ct
 
 verbosity = 0
+initialized = False
 
 class NullPointer(Exception):
 	pass
@@ -639,6 +640,11 @@ def setup_fct(fdict):
 	fdict["ct_fct"] = ct_fct
 
 def ct_call(fdict, *nargs, **kwargs):
+	global initialized
+	if not initialized:
+		initialized = True
+		coap_startup()
+	
 	if "ct_fct" not in fdict:
 		setup_fct(fdict)
 	
