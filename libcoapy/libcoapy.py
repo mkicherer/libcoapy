@@ -577,6 +577,12 @@ class CoapContext():
 		
 		coap_context_set_psk2(self.lcoap_ctx, ct.byref(self.dtls_spsk))
 	
+	async def responseHandler_async(self, lcoap_session, pdu_sent, pdu_recv, mid, handler_dict):
+		if "handler_data" in handler_dict:
+			await handler_dict["handler"](lcoap_session, pdu_sent, pdu_recv, mid, handler_dict["handler_data"])
+		else:
+			await handler_dict["handler"](lcoap_session, pdu_sent, pdu_recv, mid)
+	
 	def responseHandler(self, lcoap_session, pdu_sent, pdu_recv, mid):
 		rv = None
 		
@@ -595,12 +601,27 @@ class CoapContext():
 			
 			orig_tx_pdu = session.token_handlers[token]["pdu"]
 			
-			if "handler_data" in session.token_handlers[token]:
-				rv = session.token_handlers[token]["handler"](session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]["handler_data"])
+			handler = session.token_handlers[token]["handler"]
+			
+			from inspect import iscoroutinefunction
+			if iscoroutinefunction(handler):
+				import asyncio
+				
+				if not session.token_handlers[token].get("observed", False):
+					del session.token_handlers[token]
+				
+				tx_pdu.make_persistent()
+				rx_pdu.make_persistent()
+				
+				asyncio.ensure_future(self.responseHandler_async(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]), loop=self._loop)
 			else:
-				rv = session.token_handlers[token]["handler"](session, orig_tx_pdu, rx_pdu, mid)
-			if not session.token_handlers[token].get("observed", False):
-				del session.token_handlers[token]
+				if "handler_data" in session.token_handlers[token]:
+					rv = handler(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]["handler_data"])
+				else:
+					rv = handler(session, orig_tx_pdu, rx_pdu, mid)
+				
+				if not session.token_handlers[token].get("observed", False):
+					del session.token_handlers[token]
 		else:
 			if not session:
 				print("unexpected session", lcoap_session, file=sys.stderr)
