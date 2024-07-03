@@ -182,13 +182,30 @@ class CoapClientSession(CoapSession):
 			import os
 			global local_unix_socket_counter
 			
-			# the "in" socket must be unique per session
-			self.local_addr = coap_address_t()
-			coap_address_init(ct.byref(self.local_addr));
-			self.local_addr_unix_path = b"/tmp/libcoapy.%d.%d" % (os.getpid(), local_unix_socket_counter)
-			local_unix_socket_counter += 1
-			
-			coap_address_set_unix_domain(ct.byref(self.local_addr), bytes2uint8p(self.local_addr_unix_path), len(self.local_addr_unix_path))
+			if False:
+				# TODO we cannot use this path for now as it is difficult to calculate
+				# the size of coap_address_t which (for now) is just an opaque structure.
+				# Maybe it would be best to add a coap_address_alloc() function to libcoap
+				# to be portable across different systems.
+				
+				# the "in" socket must be unique per session
+				self.local_addr = coap_address_t()
+				coap_address_init(ct.byref(self.local_addr))
+				# max length due to sockaddr_in6 buffer size: 26 bytes
+				self.local_addr_unix_path = b"/tmp/libcoapy.%d.%d" % (os.getpid(), local_unix_socket_counter)
+				local_unix_socket_counter += 1
+				
+				coap_address_set_unix_domain(ct.byref(self.local_addr), bytes2uint8p(self.local_addr_unix_path), len(self.local_addr_unix_path))
+			else:
+				# In this path, we use get_addr_info to allocate a coap_address_t for us.
+				
+				# max length due to sockaddr_in6 buffer size: 26 bytes
+				self.local_addr_unix_path = b"coap://%%2ftmp%%2flibcoapy.%d.%d" % (os.getpid(), local_unix_socket_counter)
+				local_unix_socket_counter += 1
+				
+				self.local_uri = self.ctx.parse_uri(self.local_addr_unix_path)
+				self.local_addr_info = self.ctx.get_addr_info(self.local_uri)
+				self.local_addr = self.local_addr_info.contents.addr
 			
 			if os.path.exists(self.local_addr_unix_path):
 				os.unlink(self.local_addr_unix_path)
