@@ -293,7 +293,7 @@ class CoapClientSession(CoapSession):
 		if coap_add_token(pdu, token_length, token) == 0:
 			print("coap_add_token() failed\n")
 		
-		token = int.from_bytes(ct.string_at(token, token_length.value))
+		token = int.from_bytes(ct.string_at(token, token_length.value), byteorder=sys.byteorder)
 		
 		optlist = ct.POINTER(coap_optlist_t)()
 		if path:
@@ -587,7 +587,7 @@ class CoapContext():
 		rv = None
 		
 		token = coap_pdu_get_token(pdu_recv)
-		token = int.from_bytes(ct.string_at(token.s, token.length))
+		token = int.from_bytes(ct.string_at(token.s, token.length), byteorder=sys.byteorder)
 		
 		session = None
 		for s in self.sessions:
