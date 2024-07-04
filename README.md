@@ -18,27 +18,59 @@ This project is still in early development. Several functions of the libcoap
 library are not yet available and existing high-level libcoapy APIs might change
 in the future.
 
-Example
--------
+Example: client
+---------------
 
 ```python
 from libcoapy import *
 
 if len(sys.argv) < 2:
-	uri_str = "coaps://localhost/.well-known/core"
+	uri_str = "coap://localhost"
 else:
 	uri_str = sys.argv[1]
 
 ctx = CoapContext()
 
-session = ctx.newSession(uri_str, hint="user", key="password")
+session = ctx.newSession(uri_str)
 
 def rx_cb(session, tx_msg, rx_msg, mid):
 	print(rx_msg.payload)
-	if not tx_msg.observe:
-		session.ctx.stop_loop()
+	session.ctx.stop_loop()
 
-session.sendMessage(payload="example data", observe=False, response_callback=rx_cb)
+session.sendMessage(path=".well-known/core", response_callback=rx_cb)
+
+ctx.loop()
+```
+
+Example: server
+---------------
+
+```python
+from libcoapy import *
+
+def echo_handler(resource, session, request, query, response):
+	if not request.payload:
+		return
+	
+	response.payload = request.payload
+
+def time_handler(resource, session, request, query, response):
+	import datetime
+	now = datetime.datetime.now()
+	response.payload = str(now)
+
+coap_set_log_level(coap_log_t.COAP_LOG_INFO)
+
+ctx = CoapContext()
+ctx.addEndpoint("coap://[::]")
+
+time_rs = CoapResource(ctx, "time")
+time_rs.addHandler(time_handler)
+ctx.addResource(time_rs)
+
+echo_rs = CoapResource(ctx, "echo")
+echo_rs.addHandler(echo_handler)
+ctx.addResource(echo_rs)
 
 ctx.loop()
 ```
