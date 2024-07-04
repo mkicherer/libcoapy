@@ -70,8 +70,72 @@ class CoapPDU():
 			self.getPayload()
 		return ct.string_at(self.payload_ptr, self.size.value)
 	
+	@payload.setter
+	def payload(self, value):
+		self.addPayload(value)
+	
+	def release_payload_cb(self, lcoap_session, payload):
+		self.ct_payload = None
+		self.session.ctx.pdu_cache.remove(self)
+	
 	def cancelObservation(self):
 		coap_cancel_observe(self.session.lcoap_session, coap_pdu_get_token(self.lcoap_pdu), coap_pdu_type_t.COAP_MESSAGE_CON)
+
+class CoapPDURequest(CoapPDU):
+	def addPayload(self, payload):
+		if not hasattr(self, "release_payload_cb_ct"):
+			self.release_payload_cb_ct = coap_release_large_data_t(self.release_payload_cb)
+		
+		if isinstance(payload, str):
+			self.payload_copy = payload.encode()
+		else:
+			self.payload_copy = payload
+		
+		payload_t = ct.c_ubyte * len(self.payload_copy)
+		self.ct_payload = payload_t.from_buffer_copy(self.payload_copy)
+		
+		# make sure our PDU object is not freed before the release_payload_cb is called
+		# NOTE: check if really needed
+		self.session.ctx.pdu_cache.append(self)
+		
+		coap_add_data_large_request(
+			self.session.lcoap_session,
+			self,
+			len(payload),
+			self.ct_payload,
+			self.release_payload_cb_ct,
+			self.ct_payload
+			)
+
+class CoapPDUResponse(CoapPDU):
+	def addPayload(self, payload, query=None, media_type=0, maxage=-1, etag=0):
+		if not hasattr(self, "release_payload_cb_ct"):
+			self.release_payload_cb_ct = coap_release_large_data_t(self.release_payload_cb)
+		
+		if isinstance(payload, str):
+			self.payload_copy = payload.encode()
+		else:
+			self.payload_copy = payload
+		
+		payload_t = ct.c_ubyte * len(self.payload_copy)
+		self.ct_payload = payload_t.from_buffer_copy(self.payload_copy)
+		
+		self.session.ctx.pdu_cache.append(self)
+		
+		coap_add_data_large_response(
+			self.rs.lcoap_rs,
+			self.session.lcoap_session,
+			self.request_pdu.lcoap_pdu,
+			self.lcoap_pdu,
+			query, # coap_string_t
+			media_type, # c_uint16
+			maxage, # c_int
+			etag, # c_uint64
+			len(self.payload_copy),
+			self.ct_payload,
+			self.release_payload_cb_ct,
+			self.ct_payload
+			)
 
 class CoapResource():
 	def __init__(self, ctx, uri, observable=True, lcoap_rs=None):
@@ -102,13 +166,19 @@ class CoapResource():
 	def _handler(self, lcoap_resource, lcoap_session, lcoap_request, lcoap_query, lcoap_response):
 		session = coap_session_get_app_data(lcoap_session)
 		
-		req_pdu = CoapPDU(lcoap_request, session)
-		resp_pdu = CoapPDU(lcoap_response, session)
+		req_pdu = CoapPDURequest(lcoap_request, session)
+		req_pdu.rs = self
+		resp_pdu = CoapPDUResponse(lcoap_response, session)
+		resp_pdu.rs = self
+		resp_pdu.request_pdu = req_pdu
 		
 		if session is None:
 			session = lcoap_session
 		
 		self.handlers[req_pdu.code](self, session, req_pdu, lcoap_query.contents if lcoap_query else None, resp_pdu)
+		
+		if resp_pdu.code == coap_pdu_code_t.COAP_EMTPY_CODE:
+			resp_pdu.code = coap_pdu_code_t.COAP_RESPONSE_CODE_CONTENT
 	
 	def addHandler(self, handler, code=coap_request_t.COAP_REQUEST_GET):
 		self.handlers[code] = handler
@@ -300,7 +370,7 @@ class CoapClientSession(CoapSession):
 				 response_callback_data=None
 		):
 		pdu = coap_pdu_init(pdu_type, code, coap_new_message_id(self.lcoap_session), coap_session_max_pdu_size(self.lcoap_session));
-		hl_pdu = CoapPDU(pdu, self)
+		hl_pdu = CoapPDURequest(pdu, self)
 		
 		token_t = ct.c_ubyte * 8
 		token = token_t()
@@ -339,11 +409,7 @@ class CoapClientSession(CoapSession):
 				raise Exception("coap_add_optlist_pdu() failed\n")
 	
 		if payload:
-			if isinstance(payload, str):
-				payload = payload.encode()
-			payload_t = ct.c_ubyte * len(payload)
-			pdu.payload = payload_t.from_buffer_copy(payload)
-			coap_add_data_large_request(self.lcoap_session, pdu, len(payload), pdu.payload, ct.cast(None, coap_release_large_data_t), None)
+			pdu.payload = payload
 		
 		mid = coap_send(self.lcoap_session, pdu)
 		if mid == COAP_INVALID_MID:
@@ -435,6 +501,7 @@ class CoapContext():
 		self.sessions = []
 		self.resources = []
 		self._loop = None
+		self.pdu_cache = []
 		
 		self.resp_handler_obj = coap_response_handler_t(self.responseHandler)
 		coap_register_response_handler(context=self.lcoap_ctx, handler=self.resp_handler_obj)

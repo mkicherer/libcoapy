@@ -344,8 +344,8 @@ class coap_dtls_spsk_info_t(LStructure):
 
 # looks like ctypes does not support coap_response_t (enum) as return value
 coap_response_handler_t = ct.CFUNCTYPE(ct.c_int, ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t), ct.POINTER(coap_pdu_t), coap_mid_t)
-coap_release_large_data_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.c_void_p)
-coap_resource_release_userdata_handler_t = ct.CFUNCTYPE(None, ct.c_void_p)
+coap_release_large_data_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.py_object)
+coap_resource_release_userdata_handler_t = ct.CFUNCTYPE(None, ct.py_object)
 
 coap_method_handler_t = ct.CFUNCTYPE(None, ct.POINTER(coap_resource_t), ct.POINTER(coap_session_t),
 	ct.POINTER(coap_pdu_t), ct.POINTER(coap_string_t), ct.POINTER(coap_pdu_t));
@@ -484,7 +484,7 @@ library_functions = [
 			ct.POINTER(ct.c_uint8),
 			coap_release_large_data_t,
 			ct.py_object,
-			]},
+			], "expect": 1},
 	{ "name": "coap_add_data_large_response", "args": [
 			ct.POINTER(coap_resource_t),
 			ct.POINTER(coap_session_t),
@@ -498,7 +498,7 @@ library_functions = [
 			ct.POINTER(ct.c_uint8),
 			coap_release_large_data_t,
 			ct.py_object,
-			]},
+			], "expect": 1},
 	{ "name": "coap_get_data_large", "args": {
 		"pdu": ct.POINTER(coap_pdu_t),
 		"length": ct.POINTER(ct.c_size_t),
