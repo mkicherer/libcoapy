@@ -7,9 +7,6 @@ def handler_unknown_uri(resource, session, request, query, response):
 	response.code = coap_pdu_code_t.COAP_RESPONSE_CODE_NOT_FOUND
 
 def echo_handler(resource, session, request, query, response):
-	if not request.payload:
-		return
-	
 	response.payload = request.payload
 
 def time_handler(resource, session, request, query, response):

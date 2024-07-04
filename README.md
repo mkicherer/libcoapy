@@ -49,17 +49,12 @@ Example: server
 from libcoapy import *
 
 def echo_handler(resource, session, request, query, response):
-	if not request.payload:
-		return
-	
 	response.payload = request.payload
 
 def time_handler(resource, session, request, query, response):
 	import datetime
 	now = datetime.datetime.now()
 	response.payload = str(now)
-
-coap_set_log_level(coap_log_t.COAP_LOG_INFO)
 
 ctx = CoapContext()
 ctx.addEndpoint("coap://[::]")
