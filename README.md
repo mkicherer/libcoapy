@@ -10,6 +10,7 @@ Dependencies:
 -------------
 
  - [libcoap](https://libcoap.net/)
+ - [netifaces](https://pypi.org/project/netifaces/) (optional, to query all IPs of an interface)
 
 Status
 ------
