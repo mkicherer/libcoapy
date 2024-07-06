@@ -304,7 +304,7 @@ class CoapClientSession(CoapSession):
 				# In this path, we use get_addr_info to allocate a coap_address_t for us.
 				
 				# max length due to sockaddr_in6 buffer size: 26 bytes
-				self.local_addr_unix_path = b"coap://%%2ftmp%%2flibcoapy.%d.%d" % (os.getpid(), local_unix_socket_counter)
+				self.local_addr_unix_path = b"coap://%%2ftmp%%2flcoapy%d.%d" % (os.getpid(), local_unix_socket_counter)
 				local_unix_socket_counter += 1
 				
 				self.local_uri = self.ctx.parse_uri(self.local_addr_unix_path)
