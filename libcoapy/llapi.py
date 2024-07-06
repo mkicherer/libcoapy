@@ -312,15 +312,24 @@ class coap_fixed_point_t(LStructure):
 class coap_string_t(LStructure):
 	_fields_ = [("length", ct.c_size_t), ("s", c_uint8_p)]
 	
+	def __init__(self, value):
+		super().__init__()
+		
+		if isinstance(value, str):
+			b = value.encode()
+		else:
+			b = value
+		
+		self.s = bytes2uint8p(b)
+		self.length = len(b)
+	
 	def __str__(self):
 		return str(c_uint8_p_to_str(self.s, self.length))
 
 class coap_str_const_t(coap_string_t):
 	pass
 
-class coap_binary_t(LStructure):
-	_fields_ = [("length", ct.c_size_t), ("s", c_uint8_p)]
-	
+class coap_binary_t(coap_string_t):
 	def __str__(self):
 		return str([ "0x%02x" % (self.s[i]) for i in range(self.length)])
 
