@@ -94,6 +94,21 @@ class CoapPDU():
 	
 	def cancelObservation(self):
 		coap_cancel_observe(self.session.lcoap_session, coap_pdu_get_token(self.lcoap_pdu), coap_pdu_type_t.COAP_MESSAGE_CON)
+	
+	@property
+	def token(self):
+		token = coap_pdu_get_token(self.lcoap_pdu)
+		token = int.from_bytes(ct.string_at(token.s, token.length), byteorder=sys.byteorder)
+		
+		return token
+	
+	def newToken(self):
+		token_t = ct.c_ubyte * 8
+		token = token_t()
+		token_length = ct.c_size_t()
+		
+		coap_session_new_token(self.session.lcoap_session, ct.byref(token_length), token)
+		coap_add_token(self.lcoap_pdu, token_length, token)
 
 class CoapPDURequest(CoapPDU):
 	def addPayload(self, payload):
@@ -386,15 +401,8 @@ class CoapClientSession(CoapSession):
 		pdu = coap_pdu_init(pdu_type, code, coap_new_message_id(self.lcoap_session), coap_session_max_pdu_size(self.lcoap_session));
 		hl_pdu = CoapPDURequest(pdu, self)
 		
-		token_t = ct.c_ubyte * 8
-		token = token_t()
-		token_length = ct.c_size_t()
-		
-		coap_session_new_token(self.lcoap_session, ct.byref(token_length), token)
-		if coap_add_token(pdu, token_length, token) == 0:
-			print("coap_add_token() failed\n")
-		
-		token = int.from_bytes(ct.string_at(token, token_length.value), byteorder=sys.byteorder)
+		hl_pdu.newToken()
+		token = hl_pdu.token
 		
 		optlist = ct.POINTER(coap_optlist_t)()
 		if path:
@@ -684,19 +692,18 @@ class CoapContext():
 	def responseHandler(self, lcoap_session, pdu_sent, pdu_recv, mid):
 		rv = None
 		
-		token = coap_pdu_get_token(pdu_recv)
-		token = int.from_bytes(ct.string_at(token.s, token.length), byteorder=sys.byteorder)
-		
 		session = None
 		for s in self.sessions:
 			if ct.cast(s.lcoap_session, ct.c_void_p).value == ct.cast(lcoap_session, ct.c_void_p).value:
 				session = s
 				break
 		
-		if session and token in session.token_handlers:
-			tx_pdu = CoapPDU(pdu_sent, session)
-			rx_pdu = CoapPDU(pdu_recv, session)
+		rx_pdu = CoapPDU(pdu_recv, session)
+		
+		if session and rx_pdu.token in session.token_handlers:
+			token = rx_pdu.token
 			
+			tx_pdu = CoapPDU(pdu_sent, session)
 			orig_tx_pdu = session.token_handlers[token]["pdu"]
 			
 			handler = session.token_handlers[token]["handler"]
