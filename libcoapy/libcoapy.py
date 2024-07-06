@@ -265,11 +265,16 @@ class CoapSession():
 		return ct.cast(s_ptr, ct.c_char_p).value.decode()
 
 class CoapClientSession(CoapSession):
-	def __init__(self, ctx, uri_str, hint=None, key=None, sni=None):
+	def __init__(self, ctx, uri_str=None, hint=None, key=None, sni=None):
 		super().__init__(ctx)
 		
-		self.uri = self.ctx.parse_uri(uri_str)
+		ctx.addSession(self)
 		
+		if uri_str:
+			self.uri = self.ctx.parse_uri(uri_str)
+			self.setup_connection(self.uri, hint, key, sni)
+	
+	def setup_connection(self, uri=None, hint=None, key=None, sni=None):
 		# from socket import AI_ALL, AI_V4MAPPED
 		# ai_hint_flags=AI_ALL | AI_V4MAPPED)
 		
@@ -559,9 +564,10 @@ class CoapContext():
 	def newSession(self, *args, **kwargs):
 		session = CoapClientSession(self, *args, **kwargs)
 		
-		self.sessions.append(session)
-		
 		return session
+	
+	def addSession(self, session):
+		self.sessions.append(session)
 	
 	def parse_uri(self, uri_str):
 		uri = coap_uri_t()
