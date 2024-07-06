@@ -1,0 +1,61 @@
+#! /usr/bin/env python3
+
+# script that mimics the behaviour of the curl tool but uses the CoAP protocol
+
+from re import match as re_match
+from argparse import ArgumentParser
+from libcoapy import *
+
+ap = ArgumentParser()
+ap.add_argument("--unix-socket")
+ap.add_argument("-X", "--request")
+ap.add_argument("-o", "--output")
+ap.add_argument("--pass", dest="password")
+ap.add_argument("-v", "--verbose", action="store_true")
+ap.add_argument("-d", "--data-ascii", "--data")
+
+ap.add_argument('uri_str')
+args = ap.parse_args()
+
+if args.verbose:
+	coap_set_log_level(coap_log_t.COAP_LOG_DEBUG)
+
+ctx = CoapContext()
+
+r = re_match("(?P<proto>coap[a-z+]*)://(?:(?P<user>[^:]*)(?::(?P<pass>[^@]*))?@)?(?P<remain>.*)", args.uri_str)
+uri_str = r.group("proto")+"://"+r.group("remain")
+uri = ctx.parse_uri(uri_str)
+
+if args.unix_socket:
+	sni = uri.host
+	uri.host = coap_str_const_t(args.unix_socket.replace("/", "%2f"))
+
+password=r.group("pass")
+if args.password:
+	password = args.password
+
+session = CoapClientSession(ctx)
+session.uri = uri
+session.setup_connection(hint=r.group("user"), key=password)
+
+code = None
+if args.request:
+	code = method2code(args.request)
+if not code:
+	code = coap_pdu_code_t.COAP_REQUEST_CODE_GET
+
+if args.data_ascii:
+	payload = args.data_ascii
+else:
+	payload = None
+
+def rx_cb(session, tx_msg, rx_msg, mid):
+	if args.output:
+		open(args.output, "wb").write(rx_msg.payload)
+	else:
+		print(rx_msg.payload)
+	session.ctx.stop_loop()
+
+session.sendMessage(payload=payload, code=code, response_callback=rx_cb)
+
+ctx.loop()
