@@ -13,6 +13,20 @@ COAP_MCAST_ADDR6	= COAP_MCAST_ADDR6_SL
 COAP_DEF_PORT		= 5683
 COAPS_DEF_PORT		= 5684
 
+def method2code(method):
+	if method == "POST":
+		return coap_pdu_code_t.COAP_REQUEST_CODE_POST
+	elif method == "PUT":
+		return coap_pdu_code_t.COAP_REQUEST_CODE_PUT
+	elif method == "DELETE":
+		return coap_pdu_code_t.COAP_REQUEST_CODE_DELETE
+	elif method == "FETCH":
+		return coap_pdu_code_t.COAP_REQUEST_CODE_FETCH
+	elif method == "PATCH":
+		return coap_pdu_code_t.COAP_REQUEST_CODE_PATCH
+	elif method == "IPATCH":
+		return coap_pdu_code_t.COAP_REQUEST_CODE_IPATCH
+
 class UnresolvableAddress(Exception):
 	def __init__(self, uri, context=None):
 		self.uri = uri
