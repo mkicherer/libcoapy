@@ -341,8 +341,8 @@ class CoapClientSession(CoapSession):
 			self.dtls_psk.psk_info.hint.s = bytes2uint8p(hint)
 			self.dtls_psk.psk_info.key.s = bytes2uint8p(key)
 			
-			self.dtls_psk.psk_info.hint.length = len(hint)
-			self.dtls_psk.psk_info.key.length = len(key)
+			self.dtls_psk.psk_info.hint.length = len(hint) if hint else 0
+			self.dtls_psk.psk_info.key.length = len(key) if key else 0
 		
 			self.lcoap_session = coap_new_client_session_psk2(self.ctx.lcoap_ctx,
 				ct.byref(self.local_addr) if self.local_addr else None,

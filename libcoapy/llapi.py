@@ -438,6 +438,8 @@ coap_endpoint_t.set_fields([
 		])
 
 def bytes2uint8p(b, cast=c_uint8_p):
+	if b is None:
+		return None
 	return ct.cast(ct.create_string_buffer(b), cast)
 
 def coap_uri_scheme_to_proto(uri_scheme):
