@@ -347,14 +347,14 @@ class CoapClientSession(CoapSession):
 			self.lcoap_session = coap_new_client_session_psk2(self.ctx.lcoap_ctx,
 				ct.byref(self.local_addr) if self.local_addr else None,
 				ct.byref(self.dest_addr),
-				coap_uri_scheme_to_proto(self.uri.scheme),
+				self.addr_info.contents.proto,
 				self.dtls_psk
 				)
 		else:
 			self.lcoap_session = coap_new_client_session(self.ctx.lcoap_ctx,
 				ct.byref(self.local_addr) if self.local_addr else None,
 				ct.byref(self.dest_addr),
-				coap_uri_scheme_to_proto(self.uri.scheme))
+				self.addr_info.contents.proto)
 	
 	@staticmethod
 	def _validate_ih_call_back(server_hint, ll_session, self):
@@ -517,7 +517,7 @@ class CoapEndpoint():
 		self.uri = ctx.parse_uri(uri)
 		self.addr_info = ctx.get_addr_info(self.uri)
 		
-		self.lcoap_endpoint = coap_new_endpoint(self.ctx.lcoap_ctx, self.addr_info.contents.addr, coap_uri_scheme_to_proto(self.uri.scheme))
+		self.lcoap_endpoint = coap_new_endpoint(self.ctx.lcoap_ctx, self.addr_info.contents.addr, self.uri.proto)
 
 class CoapContext():
 	def __init__(self):
