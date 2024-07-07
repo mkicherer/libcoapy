@@ -469,7 +469,7 @@ library_functions = [
 	{ "name": "coap_pdu_init", "args": [ct.c_uint8, ct.c_uint8, ct.c_uint16, ct.c_size_t], "restype": ct.POINTER(coap_pdu_t) },
 	{ "name": "coap_new_message_id", "args": [ct.POINTER(coap_session_t)], "restype": ct.c_uint16 },
 	{ "name": "coap_session_max_pdu_size", "args": [ct.POINTER(coap_session_t)], "restype": ct.c_size_t },
-	{ "name": "coap_send", "args": [ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t)], "restype": coap_mid_t },
+	{ "name": "coap_send", "args": [ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t)], "restype": coap_mid_t, "res_error": COAP_INVALID_MID },
 	
 	{ "name": "coap_session_get_default_leisure", "args": [ct.POINTER(coap_session_t)], "restype": coap_fixed_point_t },
 	{ "name": "coap_session_set_app_data", "args": { ct.POINTER(coap_session_t): "session", ct.py_object: "data"}, "restype": None },
