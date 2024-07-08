@@ -129,7 +129,7 @@ class CoapPDURequest(CoapPDU):
 		
 		coap_add_data_large_request(
 			self.session.lcoap_session,
-			self,
+			self.lcoap_pdu,
 			len(payload),
 			self.ct_payload,
 			self.release_payload_cb_ct,
