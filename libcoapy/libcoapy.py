@@ -771,12 +771,20 @@ class CoapContext():
 		
 		return rv
 	
-	def loop(self, timeout_ms=1000):
+	def loop(self, timeout_ms=None):
+		if timeout_ms:
+			l_timeout_ms = timeout_ms
+		else:
+			# NOTE with this value, loop_stop=True  might stop the loop only
+			# after 100ms. We could use coap_io_process_with_fds() but we would
+			# need a way to modify fd_set structures from Python.
+			l_timeout_ms = 100
+		
 		self.loop_stop = False
 		while not self.loop_stop:
-			res = coap_io_process(self.lcoap_ctx, timeout_ms);
+			res = coap_io_process(self.lcoap_ctx, l_timeout_ms);
 			if res >= 0:
-				if timeout_ms > 0:
+				if timeout_ms is not None and timeout_ms > 0:
 					if res >= timeout_ms:
 						break;
 					else:

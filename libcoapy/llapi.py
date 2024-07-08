@@ -576,6 +576,15 @@ library_functions = [
 	{ "name": "coap_io_prepare_epoll", "args": [ct.POINTER(coap_context_t), coap_tick_t], "restype": ct.c_uint },
 	{ "name": "coap_context_get_coap_fd", "args": [ct.POINTER(coap_context_t)] },
 	{ "name": "coap_ticks", "args": [ct.POINTER(coap_tick_t)], "restype": None },
+	# TODO can we use fd_set from python?
+	# { "name": "coap_io_process_with_fds", "args": {
+	# 	ct.POINTER(coap_context_t): "ctx",
+	# 	ct.c_uint32: "timeout_ms",
+	# 	ct.c_int: "nfds",
+	# 	fd_set *  	readfds,
+	# 	fd_set *  	writefds,
+	# 	fd_set *  	exceptfds 
+	# 	}
 	
 	{ "name": "coap_new_endpoint", "args": [ct.POINTER(coap_context_t), ct.POINTER(coap_address_t), coap_proto_t], "restype": ct.POINTER(coap_endpoint_t) },
 	
