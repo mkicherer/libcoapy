@@ -436,7 +436,7 @@ class CoapClientSession(CoapSession):
 				raise Exception("coap_add_optlist_pdu() failed\n")
 	
 		if payload:
-			pdu.payload = payload
+			hl_pdu.payload = payload
 		
 		mid = coap_send(self.lcoap_session, pdu)
 		if mid == COAP_INVALID_MID:
