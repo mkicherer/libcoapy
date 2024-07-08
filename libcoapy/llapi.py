@@ -711,9 +711,37 @@ def ct_call(fdict, *nargs, **kwargs):
 	
 	return res
 
-libcoap = ct.CDLL(os.environ.get("LIBCOAPY_LIB", 'libcoap-3-openssl.so.3'))
-libc = ct.CDLL('libc.so.6')
-libc.free.args = [ct.c_void_p]
+ssl_libs = [None, "openssl", "gnutls"]
+tags = [".so.3", ".so", ".dll"]
+versions = [None, "3"]
+
+libnames = []
+for ssl_lib in ssl_libs:
+	for tag in tags:
+		for version in versions:
+			name = "libcoap"
+			if version:
+				name += "-"+version
+			if ssl_lib:
+				name += "-"+ssl_lib
+			if tag:
+				name += tag
+			
+			libnames.append(name)
+
+if os.environ.get("LIBCOAPY_LIB", None):
+	libnames.insert(0, os.environ.get("LIBCOAPY_LIB"))
+
+for libname in libnames:
+	try:
+		libcoap = ct.CDLL(libname)
+	except:
+		continue
+	else:
+		break
+
+#libc = ct.CDLL('libc.so.6')
+#libc.free.args = [ct.c_void_p]
 
 resolve_immediately = False
 
