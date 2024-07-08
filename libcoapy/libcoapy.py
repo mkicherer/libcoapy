@@ -403,6 +403,8 @@ class CoapClientSession(CoapSession):
 				 response_callback=None,
 				 response_callback_data=None
 		):
+		"""create a PDU with given parameters, send and return it"""
+		
 		pdu = coap_pdu_init(pdu_type, code, coap_new_message_id(self.lcoap_session), coap_session_max_pdu_size(self.lcoap_session));
 		hl_pdu = CoapPDURequest(pdu, self)
 		
@@ -483,6 +485,9 @@ class CoapClientSession(CoapSession):
 		observer.addResponse(rx_msg)
 	
 	async def query(self, *args, **kwargs):
+		""" start an asynchronous request and return a generator object if
+		observe=True is set, else return the response pdu
+		"""
 		observer = CoapObserver()
 		
 		kwargs["response_callback"] = self.async_response_callback
