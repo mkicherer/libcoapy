@@ -455,6 +455,30 @@ class CoapClientSession(CoapSession):
 		
 		return hl_pdu
 	
+	def request_cb(self, session, tx_pdu, rx_pdu, mid, req_userdata):
+		req_userdata.ready = True
+		req_userdata.rx_pdu = rx_pdu
+		rx_pdu.make_persistent()
+		self.ctx.loop_stop = True
+	
+	def request(self, *args, **kwargs):
+		"""send a synchronous request and return the response"""
+		req_userdata = lambda: None
+		req_userdata.ready = False
+		
+		kwargs["response_callback"] = self.request_cb
+		kwargs["response_callback_data"] = req_userdata
+		
+		tx_pdu = self.sendMessage(*args, **kwargs)
+		
+		lkwargs={}
+		if "timeout_ms" in kwargs:
+			lkwargs["timeout_ms"] = kwargs["timeout_ms"]
+		
+		self.ctx.loop(**lkwargs)
+		
+		return req_userdata.rx_pdu
+	
 	def async_response_callback(self, session, tx_msg, rx_msg, mid, observer):
 		observer.addResponse(rx_msg)
 	
@@ -742,16 +766,16 @@ class CoapContext():
 		
 		return rv
 	
-	def loop(self, timeout=None):
+	def loop(self, timeout_ms=1000):
 		self.loop_stop = False
 		while not self.loop_stop:
-			res = coap_io_process(self.lcoap_ctx, 1000);
+			res = coap_io_process(self.lcoap_ctx, timeout_ms);
 			if res >= 0:
-				if timeout is not None and timeout > 0:
-					if res >= timeout:
+				if timeout_ms > 0:
+					if res >= timeout_ms:
 						break;
 					else:
-						timeout -= res
+						timeout_ms -= res
 			else:
 				raise Exception("coap_io_process() returned:", res)
 	
