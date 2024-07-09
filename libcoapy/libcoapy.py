@@ -898,26 +898,48 @@ class CoapContext():
 	def enable_multicast(self, multicast_interfaces=None):
 		import socket
 		
+		try:
+			import ifaddr
+		except ModuleNotFoundError:
+			ifaddr = None
+			try:
+				import netifaces
+			except ModuleNotFoundError:
+				netifaces = None
+		
 		if multicast_interfaces:
 			self.multicast_interfaces = multicast_interfaces
 		else:
-			self.multicast_interfaces = [i[1] for i in socket.if_nameindex()]
-		
-		try:
-			import netifaces
-		except ModuleNotFoundError:
-			netifaces = None
+			if ifaddr:
+				self.multicast_interfaces = [ a.nice_name for a in ifaddr.get_adapters() ]
+			elif netifaces:
+				self.multicast_interfaces = netifaces.interfaces()
+			else:
+				self.multicast_interfaces = [i[1] for i in socket.if_nameindex()]
+			
 		
 		self.interfaces = []
 		for if_name in self.multicast_interfaces:
 			mc_intf = lambda: None
 			mc_intf.name = if_name
+			try:
+				mc_intf.index = socket.if_nametoindex(if_name)
+			except:
+				pass
 			
 			if if_name == "lo":
 				continue
 			
-			# with netifaces module add all IPs, without use the first we get
-			if netifaces:
+			if ifaddr:
+				mc_intf.ips = []
+				for adapter in ifaddr.get_adapters():
+					for ip in adapter.ips:
+						if isinstance(ip.ip, str):
+							mc_intf.ips.append( (socket.AF_INET, ip.ip) )
+						else:
+							mc_intf.ips.append( (socket.AF_INET6, ip.ip[0]) )
+			elif netifaces:
+				# with netifaces module add all IPs, without use the first we get
 				mc_intf.ips = []
 				for link in netifaces.ifaddresses(if_name).get(netifaces.AF_INET, []):
 					mc_intf.ips.append( (socket.AF_INET, link['addr']) )
