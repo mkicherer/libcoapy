@@ -501,7 +501,10 @@ class CoapClientSession(CoapSession):
 		
 		self.ctx.loop(**lkwargs)
 		
-		return req_userdata.rx_pdu
+		if req_userdata.ready:
+			return req_userdata.rx_pdu
+		else:
+			return None
 	
 	def async_response_callback(self, session, tx_msg, rx_msg, mid, observer):
 		observer.addResponse(rx_msg)
