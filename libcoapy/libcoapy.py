@@ -833,9 +833,13 @@ class CoapContext():
 		else:
 			self._loop = loop
 		
-		self.coap_fd = coap_context_get_coap_fd(self.lcoap_ctx)
-		
-		self._loop.add_reader(self.coap_fd, self.fd_callback)
+		try:
+			self.coap_fd = coap_context_get_coap_fd(self.lcoap_ctx)
+		except OSError as e:
+			self.coap_fd = -1
+			self._loop.create_task(self.fd_timeout_cb(100))
+		else:
+			self._loop.add_reader(self.coap_fd, self.fd_callback)
 	
 	async def fd_timeout_cb(self, timeout_ms):
 		from asyncio import sleep
@@ -854,11 +858,39 @@ class CoapContext():
 		coap_io_process(self.lcoap_ctx, COAP_IO_NO_WAIT)
 		
 		coap_ticks(ct.byref(now))
-		timeout_ms = coap_io_prepare_epoll(self.lcoap_ctx, now);
+		if self.coap_fd >= 0:
+			timeout_ms = coap_io_prepare_epoll(self.lcoap_ctx, now)
+		else:
+			if not hasattr(self._loop, "coap_reader_fds"):
+				self._loop.coap_reader_fds = []
+			
+			max_sockets = 8;
+			while True:
+				socklist_t = ct.POINTER(coap_socket_t) * max_sockets
+				sockets = socklist_t()
+				num_sockets = ct.c_uint()
+				timeout_ms = coap_io_prepare_io(self.lcoap_ctx, ct.cast(ct.byref(sockets), ct.POINTER(ct.POINTER(coap_socket_t))), max_sockets, ct.byref(num_sockets), now)
+				if num_sockets.value < max_sockets:
+					new_fds =  []
+					for i in range(num_sockets.value):
+						# print(sockets[i].contents.fd, sockets[i].contents.flags)
+						new_fds.append(sockets[i].contents.fd)
+					
+					for old_fd in self._loop.coap_reader_fds:
+						if old_fd not in new_fds:
+							self._loop.remove_reader(old_fd)
+						else:
+							new_fds.remove(old_fd)
+					
+					for new_fd in new_fds:
+						self._loop.add_reader(new_fd, self.fd_callback)
+						self._loop.coap_reader_fds.append(new_fd)
+					break
+				else:
+					max_sockets *= 2;
 		
 		if timeout_ms > 0:
-			self.fd_timeout_ms = timeout_ms
-			self.fd_timeout_fut = self._loop.create_task(self.fd_timeout_cb(self.fd_timeout_ms))
+			self.fd_timeout_fut = self._loop.create_task(self.fd_timeout_cb(timeout_ms))
 	
 	def _enable_multicast(self, multicast_address=COAP_MCAST_ADDR4, interface_name=None):
 		coap_join_mcast_group_intf(self.lcoap_ctx, multicast_address, interface_name)

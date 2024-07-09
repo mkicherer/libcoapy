@@ -250,6 +250,8 @@ coap_mid_t = ct.c_int
 coap_opt_t = ct.c_uint8
 coap_tick_t = ct.c_uint64
 coap_option_num_t = ct.c_uint16
+coap_fd_t = ct.c_int
+coap_socket_flags_t = ct.c_uint16
 
 COAP_INVALID_MID = -1
 COAP_INVALID_TID = COAP_INVALID_MID
@@ -437,6 +439,14 @@ coap_endpoint_t.set_fields([
 		(ct.POINTER(coap_session_t), "sessions"),
 		])
 
+class coap_socket_t(LStructure):
+	_fields_ = [
+		("fd", coap_fd_t),
+		("flags", coap_socket_flags_t),
+		("session", ct.POINTER(coap_session_t)),
+		("endpoint", ct.POINTER(coap_endpoint_t)),
+		]
+
 def bytes2uint8p(b, cast=c_uint8_p):
 	if b is None:
 		return None
@@ -585,6 +595,14 @@ library_functions = [
 	# 	fd_set *  	writefds,
 	# 	fd_set *  	exceptfds 
 	# 	}
+	{ "name": "coap_io_prepare_io", "args": {
+			ct.POINTER(coap_context_t): "ctx",
+			ct.POINTER(ct.POINTER(coap_socket_t)): "sockets",
+			ct.c_uint: "max_sockets",
+			ct.POINTER(ct.c_uint): "num_sockets",
+			coap_tick_t: "now",
+			},
+		"restype": ct.c_uint },
 	
 	{ "name": "coap_new_endpoint", "args": [ct.POINTER(coap_context_t), ct.POINTER(coap_address_t), coap_proto_t], "restype": ct.POINTER(coap_endpoint_t) },
 	
