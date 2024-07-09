@@ -19,6 +19,22 @@ This project is still in early development. Several functions of the libcoap
 library are not yet available and existing high-level libcoapy APIs might change
 in the future.
 
+Portability
+-----------
+
+libcoapy is a pure python module and the underlying libcoap supports several platforms
+like Linux, Windows, MacOS and Android. However, libcoap (and hence libcoapy) does not
+support all features on all platforms and with all possible SSL/TLS libraries.
+
+If you want to use libcoapy with asyncio on platforms without epoll, like Windows,
+it might be necessary to choose an event loop that supports `add_reader()`. On
+Windows you might need to add this to your code before initializing the loop:
+
+```
+if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+	asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+```
+
 Example: client
 ---------------
 
