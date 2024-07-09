@@ -571,7 +571,7 @@ class CoapEndpoint():
 		self.uri = ctx.parse_uri(uri)
 		self.addr_info = ctx.get_addr_info(self.uri)
 		
-		self.lcoap_endpoint = coap_new_endpoint(self.ctx.lcoap_ctx, self.addr_info.contents.addr, self.uri.proto)
+		self.lcoap_endpoint = coap_new_endpoint(self.ctx.lcoap_ctx, self.addr_info.contents.addr, self.addr_info.contents.proto)
 
 class CoapContext():
 	def __init__(self):
