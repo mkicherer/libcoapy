@@ -246,7 +246,18 @@ class CoapSession():
 	def remote_address(self):
 		addr = coap_session_get_addr_remote(self.lcoap_session)
 		
-		s_len = 64
+		s_len = 128
+		s_ptr_t = ct.c_uint8*s_len
+		s_ptr = s_ptr_t()
+		new_len = coap_print_addr(addr, s_ptr, s_len)
+		
+		return ct.string_at(s_ptr, new_len).decode()
+	
+	@property
+	def local_address(self):
+		addr = coap_session_get_addr_local(self.lcoap_session)
+		
+		s_len = 128
 		s_ptr_t = ct.c_uint8*s_len
 		s_ptr = s_ptr_t()
 		new_len = coap_print_addr(addr, s_ptr, s_len)
@@ -257,7 +268,18 @@ class CoapSession():
 	def remote_ip(self):
 		addr = coap_session_get_addr_remote(self.lcoap_session)
 		
-		s_len = 64
+		s_len = 128
+		s_ptr_t = ct.c_uint8*s_len
+		s_ptr = s_ptr_t()
+		coap_print_ip_addr(addr, s_ptr, s_len)
+		
+		return ct.cast(s_ptr, ct.c_char_p).value.decode()
+	
+	@property
+	def local_ip(self):
+		addr = coap_session_get_addr_local(self.lcoap_session)
+		
+		s_len = 128
 		s_ptr_t = ct.c_uint8*s_len
 		s_ptr = s_ptr_t()
 		coap_print_ip_addr(addr, s_ptr, s_len)
