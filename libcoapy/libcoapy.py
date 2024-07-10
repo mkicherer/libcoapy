@@ -240,7 +240,33 @@ class CoapSession():
 	def getInterfaceName(self):
 		from socket import if_indextoname
 		
-		return if_indextoname(self.getInterfaceIndex())
+		index = self.getInterfaceIndex()
+		try:
+			import ifaddr
+		except ModuleNotFoundError:
+			ifaddr = None
+			pass
+		else:
+			for adapter in ifaddr.get_adapters():
+				if adapter.index == index:
+					return adapter.nice_name
+		
+		try:
+			return if_indextoname(index)
+		except OSError as e:
+			if ifaddr:
+				# TODO addresses could be the same on different interfaces
+				for adapter in ifaddr.get_adapters():
+					for ip in adapter.ips:
+						if isinstance(ip.ip, str):
+							if ip.ip == self.local_ip:
+								return adapter.nice_name
+						else:
+							if ip.ip[0] == self.local_ip:
+								return adapter.nice_name
+			
+			print("if_indextoname failed:", e)
+			raise
 	
 	@property
 	def remote_address(self):
@@ -982,7 +1008,10 @@ class CoapContext():
 			else:
 				mcast_addr = COAP_MCAST_ADDR4
 			
-			self._enable_multicast(mcast_addr, if_name)
+			try:
+				self._enable_multicast(mcast_addr, if_name)
+			except Exception as e:
+				print("enabling multicast on", if_name, "failed:", e)
 			
 			self.interfaces.append(mc_intf)
 
