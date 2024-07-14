@@ -334,9 +334,9 @@ class CoapClientSession(CoapSession):
 		
 		if uri_str:
 			self.uri = self.ctx.parse_uri(uri_str)
-			self.setup_connection(self.uri, hint, key, sni)
+			self.setup_connection(hint, key, sni)
 	
-	def setup_connection(self, uri=None, hint=None, key=None, sni=None):
+	def setup_connection(self, hint=None, key=None, sni=None):
 		# from socket import AI_ALL, AI_V4MAPPED
 		# ai_hint_flags=AI_ALL | AI_V4MAPPED)
 		
