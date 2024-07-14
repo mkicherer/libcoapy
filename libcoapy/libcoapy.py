@@ -46,6 +46,7 @@ class CoapPDU():
 		self.payload_ptr = ct.POINTER(ct.c_uint8)()
 		self.session = session
 		self._token = None
+		self._pdu_type = None
 	
 	def getPayload(self):
 		self.size = ct.c_size_t()
@@ -78,6 +79,8 @@ class CoapPDU():
 		if not self.payload_ptr:
 			self.getPayload()
 		self.payload_copy = ct.string_at(self.payload_ptr, self.size.value)
+		
+		self._pdu_type = self.type
 		
 		self._orig_pdu = self.lcoap_pdu
 		
@@ -130,6 +133,8 @@ class CoapPDU():
 	
 	@property
 	def type(self):
+		if self._pdu_type:
+			return self._pdu_type
 		return coap_pdu_get_type(self.lcoap_pdu)
 
 class CoapPDURequest(CoapPDU):
