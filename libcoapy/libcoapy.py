@@ -559,6 +559,7 @@ class CoapClientSession(CoapSession):
 		kwargs["response_callback_data"] = observer
 		
 		tx_pdu = self.sendMessage(*args, **kwargs)
+		observer.tx_pdu = tx_pdu
 		
 		if kwargs.get("observe", False):
 			return observer
@@ -566,9 +567,10 @@ class CoapClientSession(CoapSession):
 			return await observer.__anext__()
 
 class CoapObserver():
-	def __init__(self):
+	def __init__(self, tx_pdu=None):
 		from asyncio import Event
 		
+		self.tx_pdu = tx_pdu
 		self.ev = Event()
 		self.rx_msgs = []
 		self._stop = False
@@ -591,6 +593,7 @@ class CoapObserver():
 			await self.wait()
 		
 		if self._stop:
+			coap_cancel_observe(self.tx_pdu.session.lcoap_session, self.tx_pdu._token, self.tx_pdu.type);
 			raise StopAsyncIteration()
 		
 		rv = self.rx_msgs.pop()
