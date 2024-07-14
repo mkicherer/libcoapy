@@ -27,6 +27,14 @@ def method2code(method):
 	elif method == "IPATCH":
 		return coap_pdu_code_t.COAP_REQUEST_CODE_IPATCH
 
+def getarg(args, kwargs, idx, name, default=None):
+	if len(args) >= idx:
+		return args[idx]
+	elif name in kwargs:
+		return kwargs[name]
+	else:
+		return default
+
 class UnresolvableAddress(Exception):
 	def __init__(self, uri, context=None):
 		self.uri = uri
@@ -467,6 +475,9 @@ class CoapClientSession(CoapSession):
 		):
 		"""create a PDU with given parameters, send and return it"""
 		
+		if not self.lcoap_session:
+			raise Exception("session not set up")
+		
 		pdu = coap_pdu_init(pdu_type, code, coap_new_message_id(self.lcoap_session), coap_session_max_pdu_size(self.lcoap_session));
 		hl_pdu = CoapPDURequest(pdu, self)
 		
@@ -547,6 +558,7 @@ class CoapClientSession(CoapSession):
 			return None
 	
 	def async_response_callback(self, session, tx_msg, rx_msg, mid, observer):
+		rx_msg.make_persistent()
 		observer.addResponse(rx_msg)
 	
 	async def query(self, *args, **kwargs):
