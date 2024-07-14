@@ -994,6 +994,10 @@ class CoapContext():
 			if ifaddr:
 				mc_intf.ips = []
 				for adapter in ifaddr.get_adapters():
+					if adapter.nice_name != if_name:
+						continue
+					mc_intf.index = adapter.index
+					
 					for ip in adapter.ips:
 						if isinstance(ip.ip, str):
 							mc_intf.ips.append( (socket.AF_INET, ip.ip) )
