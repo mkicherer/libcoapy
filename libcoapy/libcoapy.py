@@ -982,7 +982,7 @@ class CoapContext():
 			# the asyncio event loop
 			max_sockets = 8;
 			while True:
-				if not hasattr(self, "coap_sockets"):
+				if not getattr(self, "coap_sockets", None):
 					socklist_t = ct.POINTER(coap_socket_t) * max_sockets
 					self.coap_sockets = socklist_t()
 					self.num_sockets = ct.c_uint()
@@ -1018,7 +1018,8 @@ class CoapContext():
 							self._loop.add_writer(new_fd, create_lambda(new_fd, True))
 					break
 				else:
-					max_sockets *= 2;
+					max_sockets *= 2
+					self.coap_sockets = None
 		
 		if timeout_ms > 0:
 			self.fd_timeout_fut = self._loop.create_task(self.fd_timeout_cb(timeout_ms))
