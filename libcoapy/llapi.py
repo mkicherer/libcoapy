@@ -267,6 +267,17 @@ class LStructure(ct.Structure):
 				for f in self._fields_])
 			)
 	
+	# Looks like number types get converted to type "int". We have to use this
+	# workaround to access the actual ctype of a field.
+	# https://stackoverflow.com/questions/71802792/why-does-ctypes-c-int-completely-change-its-behaviour-when-put-into-ctypes-struc
+	def ctype(self, field):
+		ftype=None
+		for fname, ftype in self._fields_:
+			if fname == field:
+				t = ftype
+				break
+		return ftype.from_buffer(self, getattr(self.__class__, field).offset)
+	
 	@classmethod
 	def set_fields(cls, fields):
 		cls._fields_ = [ (name, typ) for typ, name in fields ]
