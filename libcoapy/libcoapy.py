@@ -576,6 +576,7 @@ class CoapClientSession(CoapSession):
 		kwargs["response_callback_data"] = observer
 		
 		tx_pdu = self.sendMessage(*args, **kwargs)
+		tx_pdu.make_persistent()
 		observer.tx_pdu = tx_pdu
 		
 		if kwargs.get("observe", False):
