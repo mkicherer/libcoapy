@@ -419,6 +419,8 @@ class coap_dtls_cpsk_info_t(LStructure):
 # actually returns coap_dtls_cpsk_info_t
 coap_dtls_ih_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(coap_str_const_t), ct.POINTER(coap_session_t), ct.py_object)
 
+COAP_DTLS_CPSK_SETUP_VERSION = 1
+
 class coap_dtls_cpsk_t(LStructure):
 	_fields_ = [
 		("version", ct.c_uint8),

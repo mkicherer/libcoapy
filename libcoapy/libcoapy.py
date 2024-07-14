@@ -392,7 +392,7 @@ class CoapClientSession(CoapSession):
 		if self.uri.scheme == coap_uri_scheme_t.COAP_URI_SCHEME_COAPS:
 			self.dtls_psk = coap_dtls_cpsk_t()
 			
-			self.dtls_psk.version = COAP_DTLS_SPSK_SETUP_VERSION
+			self.dtls_psk.version = COAP_DTLS_CPSK_SETUP_VERSION
 			
 			self.dtls_psk.validate_ih_call_back = coap_dtls_ih_callback_t(self._validate_ih_call_back)
 			self.dtls_psk.ih_call_back_arg = self
@@ -407,6 +407,12 @@ class CoapClientSession(CoapSession):
 				key = getattr(self, "psk_key", None)
 			else:
 				self.psk_key = key
+			
+			# we have to set a value or the callback will not be called
+			if not hint:
+				hint = "unset"
+			if not key:
+				key = "unset"
 			
 			if isinstance(hint, str):
 				hint = hint.encode()
@@ -436,7 +442,7 @@ class CoapClientSession(CoapSession):
 		result = coap_dtls_cpsk_info_t()
 		
 		if hasattr(self, "validate_ih_call_back"):
-			hint, key = self.validate_ih_call_back(self, str(server_hint.contents))
+			hint, key = self.validate_ih_call_back(self, str(server_hint.contents).encode())
 		else:
 			hint = getattr(self, "psk_hint", "")
 			key = getattr(self, "psk_key", "")
