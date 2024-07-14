@@ -37,6 +37,7 @@ class CoapPDU():
 		self.lcoap_pdu = pdu
 		self.payload_ptr = ct.POINTER(ct.c_uint8)()
 		self.session = session
+		self._token = None
 	
 	def getPayload(self):
 		self.size = ct.c_size_t()
@@ -61,11 +62,6 @@ class CoapPDU():
 	def code(self):
 		return coap_pdu_code_t(coap_pdu_get_code(self.lcoap_pdu))
 	
-	@property
-	def token(self):
-		b = coap_pdu_get_token(self.lcoap_pdu)
-		return ct.string_at(b.s, b.length)
-	
 	@code.setter
 	def code(self, value):
 		coap_pdu_set_code(self.lcoap_pdu, value)
@@ -74,6 +70,15 @@ class CoapPDU():
 		if not self.payload_ptr:
 			self.getPayload()
 		self.payload_copy = ct.string_at(self.payload_ptr, self.size.value)
+		
+		self._orig_pdu = self.lcoap_pdu
+		
+		self.lcoap_pdu = coap_pdu_duplicate(
+			self.lcoap_pdu,
+			self.session.lcoap_session,
+			self._token.length,
+			self._token.s,
+			None)
 	
 	@property
 	def payload(self):
@@ -96,19 +101,28 @@ class CoapPDU():
 		coap_cancel_observe(self.session.lcoap_session, coap_pdu_get_token(self.lcoap_pdu), coap_pdu_type_t.COAP_MESSAGE_CON)
 	
 	@property
-	def token(self):
-		token = coap_pdu_get_token(self.lcoap_pdu)
-		token = int.from_bytes(ct.string_at(token.s, token.length), byteorder=sys.byteorder)
+	def token_bytes(self):
+		self._token = coap_pdu_get_token(self.lcoap_pdu)
 		
-		return token
+		return ct.string_at(self._token.s, self._token.length)
+	
+	@property
+	def token(self):
+		return int.from_bytes(self.token_bytes, byteorder=sys.byteorder)
 	
 	def newToken(self):
-		token_t = ct.c_ubyte * 8
-		token = token_t()
-		token_length = ct.c_size_t()
+		self._token = coap_binary_t()
+		self._token.length = 8
 		
-		coap_session_new_token(self.session.lcoap_session, ct.byref(token_length), token)
-		coap_add_token(self.lcoap_pdu, token_length, token)
+		token_t = ct.c_ubyte * self._token.length
+		self._token.s = token_t()
+		
+		coap_session_new_token(self.session.lcoap_session, ct.byref(self._token.ctype("length")), self._token.s)
+		coap_add_token(self.lcoap_pdu, self._token.length, self._token.s)
+	
+	@property
+	def type(self):
+		return coap_pdu_get_type(self.lcoap_pdu)
 
 class CoapPDURequest(CoapPDU):
 	def addPayload(self, payload):

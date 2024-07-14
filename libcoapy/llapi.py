@@ -447,6 +447,17 @@ class coap_socket_t(LStructure):
 		("endpoint", ct.POINTER(coap_endpoint_t)),
 		]
 
+
+COAP_OPT_FILTER_SHORT = 6
+COAP_OPT_FILTER_LONG  = 2
+
+class coap_opt_filter_t(LStructure):
+	_fields_ = [
+		("mask", ct.c_uint16),
+		("long_opts", ct.c_uint16 * COAP_OPT_FILTER_LONG),
+		("short_opts", ct.c_uint8 * COAP_OPT_FILTER_SHORT),
+		]
+
 def bytes2uint8p(b, cast=c_uint8_p):
 	if b is None:
 		return None
@@ -525,9 +536,18 @@ library_functions = [
 		"total": ct.POINTER(ct.c_size_t),
 		}, "expect": 1},
 	
+	{ "name": "coap_pdu_get_type", "args": [ct.POINTER(coap_pdu_t)], "restype": coap_pdu_type_t},
 	{ "name": "coap_pdu_get_code", "args": [ct.POINTER(coap_pdu_t)], "restype": coap_pdu_code_t},
 	{ "name": "coap_pdu_get_mid", "args": [ct.POINTER(coap_pdu_t)], "restype": coap_mid_t},
 	{ "name": "coap_pdu_get_token", "args": [ct.POINTER(coap_pdu_t)], "restype": coap_bin_const_t},
+	{ "name": "coap_pdu_duplicate", "args": {
+			ct.POINTER(coap_pdu_t): "old_pdu",
+			ct.POINTER(coap_session_t): "session",
+			ct.c_size_t: "token_length",
+			ct.POINTER(ct.c_uint8): "token",
+			ct.POINTER(coap_opt_filter_t): "drop_options",
+			},
+		"restype": ct.POINTER(coap_pdu_t), },
 	
 	{ "name": "coap_new_optlist", "args": [ct.c_uint16, ct.c_size_t, ct.POINTER(ct.c_uint8)], "restype": ct.POINTER(coap_optlist_t) },
 	{ "name": "coap_add_option", "args": [ct.POINTER(coap_pdu_t), ct.c_uint16, ct.c_size_t, ct.c_uint8], "restype": ct.c_size_t, "res_error": 0 },
