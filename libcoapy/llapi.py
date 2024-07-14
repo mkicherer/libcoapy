@@ -245,6 +245,20 @@ COAP_RESOURCE_FLAGS_FORCE_SINGLE_BODY = 0x200
 COAP_RESOURCE_FLAGS_OSCORE_ONLY       = 0x400
 COAP_RESOURCE_HANDLE_WELLKNOWN_CORE   = 0x800
 
+COAP_SOCKET_EMPTY        = 0x0000
+COAP_SOCKET_NOT_EMPTY    = 0x0001
+COAP_SOCKET_BOUND        = 0x0002
+COAP_SOCKET_CONNECTED    = 0x0004
+COAP_SOCKET_WANT_READ    = 0x0010
+COAP_SOCKET_WANT_WRITE   = 0x0020
+COAP_SOCKET_WANT_ACCEPT  = 0x0040
+COAP_SOCKET_WANT_CONNECT = 0x0080
+COAP_SOCKET_CAN_READ     = 0x0100
+COAP_SOCKET_CAN_WRITE    = 0x0200
+COAP_SOCKET_CAN_ACCEPT   = 0x0400
+COAP_SOCKET_CAN_CONNECT  = 0x0800
+COAP_SOCKET_MULTICAST    = 0x1000
+
 coap_tid_t = ct.c_int
 coap_mid_t = ct.c_int
 coap_opt_t = ct.c_uint8
@@ -635,6 +649,7 @@ library_functions = [
 			coap_tick_t: "now",
 			},
 		"restype": ct.c_uint },
+	{ "name": "coap_io_do_io", "args": {ct.POINTER(coap_context_t): "ctx", coap_tick_t: "now"}, "restype": None },
 	
 	{ "name": "coap_new_endpoint", "args": [ct.POINTER(coap_context_t), ct.POINTER(coap_address_t), coap_proto_t], "restype": ct.POINTER(coap_endpoint_t) },
 	

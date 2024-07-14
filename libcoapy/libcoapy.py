@@ -533,6 +533,11 @@ class CoapClientSession(CoapSession):
 			if observe:
 				self.token_handlers[token]["observed"] = True
 		
+		# libcoap automatically signals an epoll fd that work has to be done, without
+		# epoll we have to do this ourselves.
+		if self.ctx.coap_fd < 0:
+			self.ctx.fd_callback()
+		
 		return hl_pdu
 	
 	def request_cb(self, session, tx_pdu, rx_pdu, mid, req_userdata):
@@ -819,38 +824,48 @@ class CoapContext():
 				session = s
 				break
 		
-		rx_pdu = CoapPDU(pdu_recv, session)
-		
-		if session and rx_pdu.token in session.token_handlers:
+		if not session:
+			print("unexpected session", lcoap_session, file=sys.stderr)
+		else:
+			rx_pdu = CoapPDU(pdu_recv, session)
+			if pdu_sent:
+				tx_pdu = CoapPDU(pdu_sent, session)
+			else:
+				tx_pdu = None
+			
 			token = rx_pdu.token
 			
-			tx_pdu = CoapPDU(pdu_sent, session)
-			orig_tx_pdu = session.token_handlers[token]["pdu"]
-			
-			handler = session.token_handlers[token]["handler"]
-			
-			from inspect import iscoroutinefunction
-			if iscoroutinefunction(handler):
-				import asyncio
+			if token in session.token_handlers:
+				orig_tx_pdu = session.token_handlers[token]["pdu"]
 				
-				if not session.token_handlers[token].get("observed", False):
-					del session.token_handlers[token]
+				handler = session.token_handlers[token]["handler"]
 				
-				tx_pdu.make_persistent()
-				rx_pdu.make_persistent()
-				
-				asyncio.ensure_future(self.responseHandler_async(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]), loop=self._loop)
-			else:
-				if "handler_data" in session.token_handlers[token]:
-					rv = handler(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]["handler_data"])
+				from inspect import iscoroutinefunction
+				if iscoroutinefunction(handler):
+					import asyncio
+					
+					if not session.token_handlers[token].get("observed", False):
+						del session.token_handlers[token]
+					
+					tx_pdu.make_persistent()
+					rx_pdu.make_persistent()
+					
+					asyncio.ensure_future(self.responseHandler_async(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]), loop=self._loop)
 				else:
-					rv = handler(session, orig_tx_pdu, rx_pdu, mid)
+					if "handler_data" in session.token_handlers[token]:
+						rv = handler(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]["handler_data"])
+					else:
+						rv = handler(session, orig_tx_pdu, rx_pdu, mid)
+					
+					if not session.token_handlers[token].get("observed", False):
+						del session.token_handlers[token]
+			else:
+				if tx_pdu:
+					print("txtoken", tx_pdu.token, tx_pdu.token_bytes)
+				print("unexpected rxtoken", rx_pdu.token, rx_pdu.token_bytes)
 				
-				if not session.token_handlers[token].get("observed", False):
-					del session.token_handlers[token]
-		else:
-			if not session:
-				print("unexpected session", lcoap_session, file=sys.stderr)
+				if not tx_pdu and (rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_CON or rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_NON):
+					rv = coap_response_t.COAP_RESPONSE_FAIL
 		
 		if rv is None:
 			rv = coap_response_t.COAP_RESPONSE_OK
@@ -895,8 +910,11 @@ class CoapContext():
 			self._loop = loop
 		
 		try:
+			# this only returns a valid fd if the platform supports epoll
 			self.coap_fd = coap_context_get_coap_fd(self.lcoap_ctx)
 		except OSError as e:
+			# we use -1 later to determine if we have to use the alternative
+			# event handling
 			self.coap_fd = -1
 			self._loop.create_task(self.fd_timeout_cb(100))
 		else:
@@ -908,6 +926,38 @@ class CoapContext():
 		await sleep(timeout_ms / 1000)
 		
 		self.fd_timeout_fut = None
+		if self.coap_fd >= 0:
+			self.fd_callback()
+		else:
+			self.fd_ready_cb(None, None)
+	
+	def fd_ready_cb(self, fd, write):
+		if fd:
+			# if we were called by the asyncio loop, set all the requested flags
+			# as we do not get the necessary detailed information from asyncio
+			sock = None
+			for i in range(self.num_sockets.value):
+				if self.coap_sockets[i].contents.fd == fd:
+					sock = self.coap_sockets[i].contents
+					break
+			if sock:
+				if write:
+					if sock.flags & COAP_SOCKET_WANT_WRITE:
+						sock.flags |= COAP_SOCKET_CAN_WRITE
+					if sock.flags & COAP_SOCKET_WANT_CONNECT:
+						sock.flags |= COAP_SOCKET_CAN_CONNECT
+				else:
+					if sock.flags & COAP_SOCKET_WANT_READ:
+						sock.flags |= COAP_SOCKET_CAN_READ
+					if sock.flags & COAP_SOCKET_WANT_ACCEPT:
+						sock.flags |= COAP_SOCKET_CAN_ACCEPT
+			else:
+				print("sock", fd, "not found")
+		
+		now = coap_tick_t()
+		coap_ticks(ct.byref(now))
+		coap_io_do_io(self.lcoap_ctx, now)
+		
 		self.fd_callback()
 	
 	def fd_callback(self):
@@ -915,37 +965,57 @@ class CoapContext():
 			self.fd_timeout_fut.cancel()
 		
 		now = coap_tick_t()
-		
-		coap_io_process(self.lcoap_ctx, COAP_IO_NO_WAIT)
-		
 		coap_ticks(ct.byref(now))
+		
 		if self.coap_fd >= 0:
+			try:
+				coap_io_process(self.lcoap_ctx, COAP_IO_NO_WAIT)
+			except Exception as e:
+				print("coap_io_process", e)
+			
 			timeout_ms = coap_io_prepare_epoll(self.lcoap_ctx, now)
 		else:
-			if not hasattr(self._loop, "coap_reader_fds"):
-				self._loop.coap_reader_fds = []
+			if not hasattr(self, "coap_reader_fds"):
+				self.coap_reader_fds = {}
 			
+			# get a list of all sockets from libcoap and add them manually to
+			# the asyncio event loop
 			max_sockets = 8;
 			while True:
-				socklist_t = ct.POINTER(coap_socket_t) * max_sockets
-				sockets = socklist_t()
-				num_sockets = ct.c_uint()
-				timeout_ms = coap_io_prepare_io(self.lcoap_ctx, ct.cast(ct.byref(sockets), ct.POINTER(ct.POINTER(coap_socket_t))), max_sockets, ct.byref(num_sockets), now)
-				if num_sockets.value < max_sockets:
-					new_fds =  []
-					for i in range(num_sockets.value):
-						# print(sockets[i].contents.fd, sockets[i].contents.flags)
-						new_fds.append(sockets[i].contents.fd)
+				if not hasattr(self, "coap_sockets"):
+					socklist_t = ct.POINTER(coap_socket_t) * max_sockets
+					self.coap_sockets = socklist_t()
+					self.num_sockets = ct.c_uint()
+				timeout_ms = coap_io_prepare_io(self.lcoap_ctx, ct.cast(ct.byref(self.coap_sockets), ct.POINTER(ct.POINTER(coap_socket_t))), max_sockets, ct.byref(self.num_sockets), now)
+				
+				# check if .coap_sockets was large enough
+				if self.num_sockets.value < max_sockets:
+					new_fds =  {}
+					for i in range(self.num_sockets.value):
+						new_fds[self.coap_sockets[i].contents.fd] = self.coap_sockets[i].contents.flags
 					
-					for old_fd in self._loop.coap_reader_fds:
+					for old_fd in self.coap_reader_fds:
 						if old_fd not in new_fds:
 							self._loop.remove_reader(old_fd)
 						else:
-							new_fds.remove(old_fd)
+							del new_fds[old_fd]
 					
-					for new_fd in new_fds:
-						self._loop.add_reader(new_fd, self.fd_callback)
-						self._loop.coap_reader_fds.append(new_fd)
+					# simple helper function to avoid lazy binding problems
+					def create_lambda(new_fd, write):
+						return lambda: self.fd_ready_cb(new_fd, write)
+					
+					for new_fd, flags in new_fds.items():
+						self.coap_reader_fds[new_fd] = flags
+						if (
+							(flags & COAP_SOCKET_WANT_READ)
+							or (flags & COAP_SOCKET_WANT_ACCEPT)
+							):
+							self._loop.add_reader(new_fd, create_lambda(new_fd, False))
+						if (
+							(flags & COAP_SOCKET_WANT_WRITE)
+							or (flags & COAP_SOCKET_WANT_CONNECT)
+							):
+							self._loop.add_writer(new_fd, create_lambda(new_fd, True))
 					break
 				else:
 					max_sockets *= 2;
