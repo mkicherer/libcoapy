@@ -525,8 +525,6 @@ class CoapClientSession(CoapSession):
 			hl_pdu.payload = payload
 		
 		mid = coap_send(self.lcoap_session, pdu)
-		if mid == COAP_INVALID_MID:
-			raise Exception("COAP_INVALID_MID")
 		
 		if response_callback:
 			if token not in self.token_handlers:
