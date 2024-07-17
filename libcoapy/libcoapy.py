@@ -558,11 +558,12 @@ class CoapClientSession(CoapSession):
 		kwargs["response_callback"] = self.request_cb
 		kwargs["response_callback_data"] = req_userdata
 		
-		tx_pdu = self.sendMessage(*args, **kwargs)
-		
 		lkwargs={}
 		if "timeout_ms" in kwargs:
 			lkwargs["timeout_ms"] = kwargs["timeout_ms"]
+			del kwargs["timeout_ms"]
+		
+		tx_pdu = self.sendMessage(*args, **kwargs)
 		
 		self.ctx.loop(**lkwargs)
 		
