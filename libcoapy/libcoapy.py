@@ -655,6 +655,7 @@ class CoapContext():
 		self.resources = []
 		self._loop = None
 		self.pdu_cache = []
+		self.coap_fd = -1
 		
 		self.resp_handler_obj = coap_response_handler_t(self.responseHandler)
 		coap_register_response_handler(context=self.lcoap_ctx, handler=self.resp_handler_obj)
@@ -921,7 +922,6 @@ class CoapContext():
 		except OSError as e:
 			# we use -1 later to determine if we have to use the alternative
 			# event handling
-			self.coap_fd = -1
 			self._loop.create_task(self.fd_timeout_cb(100))
 		else:
 			self._loop.add_reader(self.coap_fd, self.fd_callback)
