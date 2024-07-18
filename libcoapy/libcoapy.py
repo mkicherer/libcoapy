@@ -540,7 +540,7 @@ class CoapClientSession(CoapSession):
 		
 		# libcoap automatically signals an epoll fd that work has to be done, without
 		# epoll we have to do this ourselves.
-		if self.ctx.coap_fd < 0:
+		if self.ctx._loop and self.ctx.coap_fd < 0:
 			self.ctx.fd_callback()
 		
 		return hl_pdu
@@ -925,6 +925,8 @@ class CoapContext():
 			self._loop.create_task(self.fd_timeout_cb(100))
 		else:
 			self._loop.add_reader(self.coap_fd, self.fd_callback)
+		
+		return self._loop
 	
 	async def fd_timeout_cb(self, timeout_ms):
 		from asyncio import sleep
