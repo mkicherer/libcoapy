@@ -500,7 +500,8 @@ class CoapClientSession(CoapSession):
 			if path[0] == "/":
 				path = path[1:]
 			
-			path = path.encode()
+			if isinstance(path, str):
+				path = path.encode()
 			
 			coap_path_into_optlist(ct.cast(ct.c_char_p(path), c_uint8_p), len(path), COAP_OPTION_URI_PATH, ct.byref(optlist))
 		else:
