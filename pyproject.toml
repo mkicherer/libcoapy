@@ -25,3 +25,6 @@ Issues = "https://github.com/anyc/libcoapy/issues"
 script-files = [
     "examples/coarl"
 ]
+
+[project.optional-dependencies]
+ifaddr = ["ifaddr"]
