@@ -1122,7 +1122,7 @@ class CoapContext():
 			families = [ family for family, ip in mc_intf.ips ]
 			
 			if socket.AF_INET6 in families:
-				mcast_addr = COAP_MCAST_ADDR6
+				mcast_addr = COAP_MCAST_ADDR6_LL
 			else:
 				mcast_addr = COAP_MCAST_ADDR4
 			
