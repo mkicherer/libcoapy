@@ -507,6 +507,7 @@ class CoapClientSession(CoapSession):
 		else:
 			coap_uri_into_optlist(ct.byref(self.uri), ct.byref(self.dest_addr), ct.byref(optlist), 1)
 		
+		hl_pdu.observe = observe
 		if observe:
 			scratch_t = ct.c_uint8 * 100
 			scratch = scratch_t()
@@ -528,13 +529,11 @@ class CoapClientSession(CoapSession):
 		mid = coap_send(self.lcoap_session, pdu)
 		
 		if response_callback:
-			if token not in self.token_handlers:
-				self.token_handlers[token] = {}
+			self.token_handlers[token] = {}
+			self.token_handlers[token]["pdu"] = hl_pdu
 			self.token_handlers[token]["handler"] = response_callback
 			if response_callback_data:
 				self.token_handlers[token]["handler_data"] = response_callback_data
-			self.token_handlers[token]["pdu"] = hl_pdu
-			hl_pdu.observe = observe
 			if observe:
 				self.token_handlers[token]["observed"] = True
 		
