@@ -36,6 +36,12 @@ if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.starts
 	asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 ```
 
+Tools
+-----
+
+* coap-gui - a small Tkinter-based GUI to interact with a CoAP server
+* coarl - a CLI tool that provides a similar interface as [curl](https://curl.se/)
+
 Example: client
 ---------------
 
