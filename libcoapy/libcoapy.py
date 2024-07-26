@@ -603,10 +603,16 @@ class CoapObserver():
 		self.rx_msgs = []
 		self._stop = False
 	
+	def __del__(self):
+		self.stop()
+	
 	async def wait(self):
 		await self.ev.wait()
 	
 	def addResponse(self, rx_msg):
+		if self._stop:
+			return
+		
 		rx_msg.make_persistent()
 		
 		self.rx_msgs.append(rx_msg)
@@ -621,7 +627,6 @@ class CoapObserver():
 			await self.wait()
 		
 		if self._stop:
-			coap_cancel_observe(self.tx_pdu.session.lcoap_session, self.tx_pdu._token, self.tx_pdu.type);
 			raise StopAsyncIteration()
 		
 		rv = self.rx_msgs.pop()
@@ -632,6 +637,13 @@ class CoapObserver():
 		return rv
 	
 	def stop(self):
+		if self._stop:
+			return
+		
+		coap_cancel_observe(self.tx_pdu.session.lcoap_session, self.tx_pdu._token, self.tx_pdu.type)
+		if self.tx_pdu.token in self.tx_pdu.session.token_handlers:
+			del self.tx_pdu.session.token_handlers[self.tx_pdu.token]
+		
 		self._stop = True
 		self.ev.set()
 
