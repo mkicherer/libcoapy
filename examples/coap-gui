@@ -1,0 +1,244 @@
+#! /usr/bin/env python3
+
+import tkinter as tk
+from tkinter import ttk
+import _tkinter
+import asyncio
+
+from libcoapy import *
+
+class CoapGui():
+	def __init__(self):
+		super().__init__()
+		
+		self.ctx = CoapContext()
+		
+		self.gui_setup()
+	
+	def call_async(self, fct, **kwargs):
+		def wrapper(*fct_args, **fct_kwargs):
+			self.async_loop.create_task(fct(*fct_args, **fct_kwargs, **kwargs))
+		
+		return wrapper
+	
+	async def async_loop_main(self):
+		while not self._stop:
+			while self.win.dooneevent(_tkinter.DONT_WAIT) > 0:
+				pass
+			
+			try:
+				self.win.winfo_exists()
+			except tk.TclError:
+				break
+			
+			await asyncio.sleep(0.05)
+	
+	def loop(self):
+		self._stop = False
+		
+		if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+			asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+		
+		try:
+			self.async_loop = asyncio.get_running_loop()
+		except RuntimeError:
+			self.async_loop = asyncio.new_event_loop()
+		
+		self.ctx.setEventLoop(self.async_loop)
+		
+		self.async_loop.run_until_complete(self.async_loop_main())
+	
+	async def shutdown(self):
+		self.win.quit()
+		self._stop = True
+	
+	def gui_setup(self):
+		self.win = tk.Tk()
+
+# 		# screen_width = self.win.winfo_screenwidth()/3
+# 		# screen_height = self.win.winfo_screenheight()/2
+# 		
+# 		# TODO the geometry above is the size of all displays/monitors combined
+# 		screen_width = 1024
+# 		screen_height = 768
+# 		
+# 		self.win.geometry(str(int(screen_width))+"x"+str(int(screen_height)))
+
+		self.win.title("CoAP GUI")
+		self.win.protocol("WM_DELETE_WINDOW", self.call_async(self.shutdown))
+		
+		frame = tk.Frame(self.win)
+		frame.grid(row=0, column=0, columnspan=4, sticky="nws")
+		
+		combo = ttk.Combobox(frame, state="readonly", values=
+			[n[len("COAP_URI_SCHEME_"):].replace("_","+") for n in coap_uri_scheme_t._member_names_[:-1]])
+		combo.grid(row=0, column=0)
+		
+		def proto_select(event):
+			self.uri_scheme = combo.get().lower()
+		
+		combo.bind("<<ComboboxSelected>>", proto_select)
+		combo.current(0)
+		self.uri_scheme = "coap"
+		
+		self.address_var = tk.StringVar(frame)
+		self.address_var.set("localhost")
+		address = tk.Entry(frame, textvariable=self.address_var)
+		address.grid(row=0, column=1, columnspan=2, sticky="we")
+		
+		btn = tk.Button(frame, text="Connect", command=self.on_connect_press)
+		btn.grid(row=0, column=3, sticky="w")
+		
+		l = tk.Label(frame, text="Hint")
+		l.grid(row=1, column=0, sticky="e")
+		
+		self.user_var = tk.StringVar(frame)
+		e = tk.Entry(frame, textvariable=self.user_var)
+		e.grid(row=1, column=1, sticky="we")
+		
+		l = tk.Label(frame, text="Key")
+		l.grid(row=1, column=2, sticky="e")
+		
+		self.key_var = tk.StringVar(frame)
+		e = tk.Entry(frame, textvariable=self.key_var)
+		e.grid(row=1, column=3, sticky="we")
+		
+		async def item_selected(event):
+			iid = self.treeview.selection()[0]
+			
+			dic = self.tv_iids[iid]
+			
+			self.path_var.set("/"+dic["path"].decode())
+			self.value_var.set("")
+			
+			if "obs" in dic["params"]:
+				obs = await self.session.query(path=dic["path"], observe=True, code=self.coap_code)
+				
+				async for rx_pdu in obs:
+					if iid != self.treeview.selection()[0]:
+						obs.stop()
+						continue
+					self.value_var.set(rx_pdu.payload.decode())
+			else:
+				rx_pdu = await self.session.query(path=dic["path"], code=self.coap_code)
+				if iid != self.treeview.selection()[0]:
+					return
+				self.value_var.set(rx_pdu.payload.decode())
+		
+		
+		self.treeview = ttk.Treeview(self.win, selectmode=tk.BROWSE)
+		self.treeview.grid(row=2, column=0, columnspan=4, sticky="nswe")
+		self.treeview.tag_bind("mytag", "<<TreeviewSelect>>", self.call_async(item_selected))
+		
+		self.path_var = tk.StringVar(self.win)
+		e = tk.Entry(self.win, textvariable=self.path_var)
+		e.grid(row=3, column=0, columnspan=1, sticky="we")
+		
+		self.value_var = tk.StringVar(self.win)
+		e = tk.Entry(self.win, textvariable=self.value_var)
+		e.grid(row=3, column=1, columnspan=1, sticky="we")
+		
+		self.method_combo = ttk.Combobox(self.win, state="readonly", values=
+			[n[len("COAP_REQUEST_"):].replace("_","+") for n in coap_request_t._member_names_[:-1]])
+		self.method_combo.grid(row=3, column=2)
+		
+		def method_select(event):
+			self.coap_method = self.method_combo.get().lower()
+			self.coap_code = coap_pdu_code_t["COAP_REQUEST_CODE_"+self.method_combo.get().replace("+","_")]
+		
+		self.method_combo.bind("<<ComboboxSelected>>", method_select)
+		self.method_combo.current(0)
+		self.coap_method = "get"
+		self.coap_code = coap_pdu_code_t.COAP_REQUEST_CODE_GET
+		
+		btn = tk.Button(self.win, text="Set", command=self.call_async(self.on_value_change))
+		btn.grid(row=3, column=3, sticky="w")
+		
+		self.win.columnconfigure(0, weight=1)
+		self.win.columnconfigure(1, weight=1)
+		self.win.columnconfigure(2, weight=1)
+		self.win.columnconfigure(3, weight=1)
+		
+		self.win.rowconfigure(2, weight=1)
+	
+	async def on_value_change(self):
+		def resp_cb(session, tx_msg, rx_msg, mid):
+			print(rx_msg.code)
+		
+		path = self.path_var.get()
+		if not path:
+			return
+		
+		self.session.sendMessage(
+			path=path,
+			payload=self.value_var.get(),
+			response_callback=resp_cb,
+			code=self.coap_code
+			)
+	
+	def on_connect_press(self):
+		self.address = self.address_var.get()
+		if self.address.startswith("/"):
+			self.address = self.address.replace("/", "%2f")
+		
+		uri_str = self.uri_scheme+"://"+self.address
+		
+		self.uri = self.ctx.parse_uri(uri_str)
+		
+		user = self.user_var.get()
+		key = self.key_var.get()
+		
+		self.session = CoapClientSession(self.ctx)
+		self.session.uri = self.uri
+		self.session.setup_connection(hint=user, key=key)
+		
+		self.session.sendMessage(path=".well-known/core", response_callback=self.wellknown_core_cb)
+		
+		self.treeview.delete(*self.treeview.get_children())
+	
+	def wellknown_core_cb(self, session, tx_msg, rx_msg, mid):
+		entries = rx_msg.payload.split(b",")
+		
+		tree = {"children": {}, "tv": ""}
+		
+		self.tv_iids = {}
+		for entry in entries:
+			tup = entry.split(b";")
+			path = tup[0][1:-1]
+			sparams = tup[1:]
+			
+			params = {}
+			for p in sparams:
+				arr = p.decode().split("=")
+				if len(arr) > 1:
+					params[arr[0]] = "=".join(arr[1:])
+				else:
+					params[arr[0]] = False
+			
+			elements = path.split(b"/")
+			
+			itree = tree
+			if len(elements) > 1:
+				for elem in elements[:-1]:
+					if elem == b"":
+						elem = b"/"
+					if elem not in itree["children"]:
+						itree["children"][elem] = {"parent": itree, "children": {}}
+						itree["children"][elem]["tv"] = self.treeview.insert(itree["tv"], tk.END, text=elem)
+					itree = itree["children"][elem]
+			
+			if not elements[-1]:
+				continue
+			
+			elem = elements[-1]
+			name = elem.decode()+" ("+" ".join( key+"="+value if value is not False else key for key, value in params.items() )+")"
+			
+			itree["children"][elem] = {"parent": itree, "children": {}, "name": elem, "path": path[1:], "params": params}
+			itree["children"][elem]["tv"] = self.treeview.insert(itree["tv"], tk.END, text=name, tags=("mytag",))
+			
+			self.tv_iids[itree["children"][elem]["tv"]] = itree["children"][elem]
+
+# coap_set_log_level(coap_log_t.COAP_LOG_DEBUG)
+
+gui = CoapGui()
+gui.loop()

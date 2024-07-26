@@ -23,7 +23,8 @@ Issues = "https://github.com/anyc/libcoapy/issues"
 
 [tool.setuptools]
 script-files = [
-    "examples/coarl"
+    "examples/coarl",
+    "examples/coap-gui"
 ]
 
 [project.optional-dependencies]
