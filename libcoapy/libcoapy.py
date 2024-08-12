@@ -674,6 +674,9 @@ class CoapContext():
 		self.event_handler_obj = coap_event_handler_t(self.eventHandler)
 		coap_register_event_handler(self.lcoap_ctx, self.event_handler_obj)
 		
+		self.nack_handler_obj = coap_nack_handler_t(self.nackHandler)
+		coap_register_nack_handler(self.lcoap_ctx, self.nack_handler_obj)
+		
 		self.setBlockMode(COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY)
 	
 	def eventHandler(self, ll_session, event_type):
@@ -690,6 +693,16 @@ class CoapContext():
 			coap_session_set_app_data(ll_session, 0)
 			if session:
 				self.sessions.remove(session)
+		
+		if hasattr(self, "event_callback"):
+			self.event_callback(self, session, event_type)
+	
+	def nackHandler(self, ll_session, pdu, nack_type, mid):
+		nack_type = coap_nack_reason_t(nack_type)
+		session = coap_session_get_app_data(ll_session)
+		
+		if hasattr(self, "nack_callback"):
+			self.nack_callback(self, session, pdu, nack_type, mid)
 	
 	def __del__(self):
 		contexts.remove(self)

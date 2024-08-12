@@ -386,7 +386,7 @@ coap_resource_release_userdata_handler_t = ct.CFUNCTYPE(None, ct.py_object)
 
 coap_method_handler_t = ct.CFUNCTYPE(None, ct.POINTER(coap_resource_t), ct.POINTER(coap_session_t),
 	ct.POINTER(coap_pdu_t), ct.POINTER(coap_string_t), ct.POINTER(coap_pdu_t));
-coap_nack_handler_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t), coap_nack_reason_t, coap_mid_t)
+coap_nack_handler_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t), coap_nack_reason_t.get_ctype(), coap_mid_t)
 coap_ping_handler_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t), coap_mid_t)
 coap_pong_handler_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t), coap_mid_t)
 # get_ctype() to avoid "TypeError: cannot build parameter" message
