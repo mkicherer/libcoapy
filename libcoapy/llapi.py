@@ -71,8 +71,12 @@ coap_nack_reason_t = ctypes_enum_gen("coap_nack_reason_t", [
 	"COAP_NACK_NOT_DELIVERABLE",
 	"COAP_NACK_RST",
 	"COAP_NACK_TLS_FAILED",
-	"COAP_NACK_ICMP_ISSUE"
-	])
+	"COAP_NACK_ICMP_ISSUE",
+	"COAP_NACK_BAD_RESPONSE",
+	"COAP_NACK_TLS_LAYER_FAILED",
+	"COAP_NACK_WS_LAYER_FAILED",
+	"COAP_NACK_WS_FAILED",
+	], start=0)
 
 class coap_event_t(ctypes_enum_gen):
 	COAP_EVENT_DTLS_CLOSED		= 0x0000
