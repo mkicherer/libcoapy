@@ -45,6 +45,9 @@ class UnresolvableAddress(Exception):
 		self.uri = uri
 		self.ctx = context
 
+class CoapUnexpectedError(Exception):
+	pass
+
 class CoapPDU():
 	def __init__(self, pdu=None, session=None):
 		self.lcoap_pdu = pdu
@@ -925,7 +928,7 @@ class CoapContext():
 			raise ValueError
 		res = coap_io_process(self.lcoap_ctx, timeout_ms)
 		if res < 0:
-			raise Exception("coap_io_process() returned:", res)
+			raise CoapUnexpectedError("coap_io_process()")
 		return res
 	
 	def loop(self, timeout_ms=None, io_timeout_ms=100):

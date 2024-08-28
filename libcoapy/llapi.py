@@ -634,7 +634,7 @@ library_functions = [
 		},
 		"restype": ct.POINTER(coap_session_t) },
 	
-	{ "name": "coap_io_process", "args": [ct.POINTER(coap_context_t), ct.c_uint32] },
+	{ "name": "coap_io_process", "args": [ct.POINTER(coap_context_t), ct.c_uint32], "llapi_check": False },
 	{ "name": "coap_io_prepare_epoll", "args": [ct.POINTER(coap_context_t), coap_tick_t], "restype": ct.c_uint },
 	{ "name": "coap_context_get_coap_fd", "args": [ct.POINTER(coap_context_t)] },
 	{ "name": "coap_ticks", "args": [ct.POINTER(coap_tick_t)], "restype": None },
@@ -769,14 +769,14 @@ def ct_call(fdict, *nargs, **kwargs):
 		if fdict.get("expect", False):
 			if res != fdict["expect"]:
 				if fdict.get("restype", ct.c_int) in [ct.c_long, ct.c_int] and res < 0:
-					raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+os.strerror(-res)+" ("+str(-res)+")")
+					raise OSError(-res, fdict["name"]+str(newargs)+" failed with: "+os.strerror(-res)+" ("+str(-res)+")")
 				else:
 					raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+str(res)+" (!= "+str(fdict["expect"])+")")
 		elif fdict.get("res_error", False):
 			if res == fdict["res_error"]:
 				raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+str(res)+" (== "+str(fdict["res_error"])+")")
 		elif fdict.get("restype", ct.c_int) in [ct.c_long, ct.c_int] and res < 0:
-			raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+os.strerror(-res)+" ("+str(-res)+")")
+			raise OSError(-res, fdict["name"]+str(newargs)+" failed with: "+os.strerror(-res)+" ("+str(-res)+")")
 		elif isinstance(res, ct._Pointer) and not res:
 			raise NullPointer(fdict["name"]+str(newargs)+" returned NULL pointer")
 	
