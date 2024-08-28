@@ -920,26 +920,22 @@ class CoapContext():
 		
 		return rv
 	
-	def loop(self, timeout_ms=None):
-		if timeout_ms:
-			l_timeout_ms = timeout_ms
-		else:
-			# NOTE with this value, loop_stop=True  might stop the loop only
-			# after 100ms. We could use coap_io_process_with_fds() but we would
-			# need a way to modify fd_set structures from Python.
-			l_timeout_ms = 100
-		
+	def io_process(self, timeout_ms=COAP_IO_WAIT):
+		if timeout_ms < 0 or timeout_ms > COAP_IO_NO_WAIT.value:
+			raise ValueError
+		res = coap_io_process(self.lcoap_ctx, timeout_ms)
+		if res < 0:
+			raise Exception("coap_io_process() returned:", res)
+		return res
+	
+	def loop(self, timeout_ms=None, io_timeout_ms=100):
 		self.loop_stop = False
-		while not self.loop_stop:
-			res = coap_io_process(self.lcoap_ctx, l_timeout_ms);
-			if res >= 0:
-				if timeout_ms is not None and timeout_ms > 0:
-					if res >= timeout_ms:
-						break;
-					else:
-						timeout_ms -= res
-			else:
-				raise Exception("coap_io_process() returned:", res)
+		if timeout_ms==None:
+			while not self.loop_stop:
+				self.io_process(io_timeout_ms)
+		else:
+			while not self.loop_stop and timeout_ms > 0:
+				timeout_ms -= self.io_process(min(io_timeout_ms, timeout_ms))
 	
 	def stop_loop(self):
 		if self._loop:
@@ -1020,7 +1016,7 @@ class CoapContext():
 		
 		if self.coap_fd >= 0:
 			try:
-				coap_io_process(self.lcoap_ctx, COAP_IO_NO_WAIT)
+				self.io_process(COAP_IO_NO_WAIT)
 			except Exception as e:
 				print("coap_io_process", e)
 			
