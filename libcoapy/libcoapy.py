@@ -396,6 +396,9 @@ class CoapClientSession(CoapSession):
 			
 			self.dtls_psk.validate_ih_call_back = coap_dtls_ih_callback_t(self._validate_ih_call_back)
 			self.dtls_psk.ih_call_back_arg = self
+			
+			if isinstance(sni, str):
+				sni = sni.encode()
 			self.dtls_psk.client_sni = sni
 				
 			# register an initial name and PSK that can get replaced by the callbacks above
