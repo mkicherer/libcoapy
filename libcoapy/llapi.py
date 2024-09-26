@@ -803,6 +803,7 @@ for ssl_lib in ssl_libs:
 if os.environ.get("LIBCOAPY_LIB", None):
 	libnames.insert(0, os.environ.get("LIBCOAPY_LIB"))
 
+libcoap = None
 for libname in libnames:
 	try:
 		libcoap = ct.CDLL(libname)
@@ -810,6 +811,9 @@ for libname in libnames:
 		continue
 	else:
 		break
+
+if libcoap is None:
+	raise Exception("could not find libcoap library")
 
 #libc = ct.CDLL('libc.so.6')
 #libc.free.args = [ct.c_void_p]
