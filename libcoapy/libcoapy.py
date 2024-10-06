@@ -534,8 +534,8 @@ class CoapClientSession(CoapSession):
 			coap_delete_optlist(optlist)
 			if rv != 1:
 				raise Exception("coap_add_optlist_pdu() failed\n")
-	
-		if payload:
+		
+		if payload is not None:
 			hl_pdu.payload = payload
 		
 		mid = coap_send(self.lcoap_session, pdu)
