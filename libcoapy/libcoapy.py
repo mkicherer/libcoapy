@@ -486,6 +486,7 @@ class CoapClientSession(CoapSession):
 				 pdu_type=coap_pdu_type_t.COAP_MESSAGE_CON,
 				 code=coap_pdu_code_t.COAP_REQUEST_CODE_GET,
 				 observe=False,
+				 query=None,
 				 response_callback=None,
 				 response_callback_data=None
 		):
@@ -521,6 +522,12 @@ class CoapClientSession(CoapSession):
 					coap_encode_var_safe(scratch, ct.sizeof(scratch), COAP_OBSERVE_ESTABLISH),
 					scratch)
 				)
+		
+		if query:
+			if isinstance(query, str):
+				query = query.encode()
+			
+			coap_query_into_optlist(ct.cast(ct.c_char_p(query), c_uint8_p), len(query), COAP_OPTION_URI_QUERY, ct.byref(optlist))
 		
 		if optlist:
 			rv = coap_add_optlist_pdu(pdu, ct.byref(optlist))

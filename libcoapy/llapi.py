@@ -611,7 +611,7 @@ library_functions = [
 			ct.POINTER(ct.POINTER(coap_optlist_t)),
 			]},
 	{ "name": "coap_query_into_optlist", "args": [
-			ct.POINTER(ct.POINTER(ct.c_uint8)),
+			ct.POINTER(ct.c_uint8),
 			ct.c_size_t,
 			coap_option_num_t,
 			ct.POINTER(ct.POINTER(coap_optlist_t)),
