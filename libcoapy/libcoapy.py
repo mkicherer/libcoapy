@@ -434,11 +434,13 @@ class CoapClientSession(CoapSession):
 				self.addr_info.contents.proto,
 				self.dtls_psk
 				)
+			coap_session_set_app_data(self.lcoap_session, self)
 		else:
 			self.lcoap_session = coap_new_client_session(self.ctx.lcoap_ctx,
 				ct.byref(self.local_addr) if self.local_addr else None,
 				ct.byref(self.dest_addr),
 				self.addr_info.contents.proto)
+			coap_session_set_app_data(self.lcoap_session, self)
 	
 	@staticmethod
 	def _validate_ih_call_back(server_hint, ll_session, self):
