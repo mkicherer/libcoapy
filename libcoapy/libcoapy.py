@@ -1045,9 +1045,18 @@ class CoapContext():
 					for i in range(self.num_sockets.value):
 						new_fds[self.coap_sockets[i].contents.fd] = self.coap_sockets[i].contents.flags
 					
-					for old_fd in self.coap_reader_fds:
+					for old_fd, old_flags in self.coap_reader_fds.items():
 						if old_fd not in new_fds:
-							self._loop.remove_reader(old_fd)
+							if (
+								(old_flags & COAP_SOCKET_WANT_READ)
+								or (old_flags & COAP_SOCKET_WANT_ACCEPT)
+								):
+								self._loop.remove_reader(old_fd)
+							if (
+								(old_flags & COAP_SOCKET_WANT_WRITE)
+								or (old_flags & COAP_SOCKET_WANT_CONNECT)
+								):
+								self._loop.remove_writer(old_fd)
 						else:
 							del new_fds[old_fd]
 					
