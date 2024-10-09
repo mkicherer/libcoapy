@@ -1084,14 +1084,13 @@ class CoapContext():
 		if timeout_ms > 0:
 			self.fd_timeout_fut = self._loop.create_task(self.fd_timeout_cb(timeout_ms))
 	
-	def _enable_multicast(self, multicast_address=COAP_MCAST_ADDR4, interface_name=None):
-		coap_join_mcast_group_intf(self.lcoap_ctx, multicast_address, interface_name)
-	
-	def enable_multicast(self, multicast_interfaces=None):
+	@staticmethod
+	def get_available_interfaces():
 		import socket
 		
 		try:
 			import ifaddr
+			netifaces = None
 		except ModuleNotFoundError:
 			ifaddr = None
 			try:
@@ -1099,91 +1098,139 @@ class CoapContext():
 			except ModuleNotFoundError:
 				netifaces = None
 		
-		if multicast_interfaces:
-			self.multicast_interfaces = multicast_interfaces
-		else:
-			if ifaddr:
-				self.multicast_interfaces = [ a.nice_name for a in ifaddr.get_adapters() ]
-			elif netifaces:
-				self.multicast_interfaces = netifaces.interfaces()
-			else:
-				self.multicast_interfaces = [i[1] for i in socket.if_nameindex()]
+		interfaces = {}
+		if ifaddr:
+			# interfaces = [ a.nice_name for a in ifaddr.get_adapters() ]
+			for adapter in ifaddr.get_adapters():
+				intf = lambda: None
+				intf.name = adapter.nice_name
+				intf.index = adapter.index
+				intf.adapter = adapter
+				
+				intf.ips = []
+				for ip in adapter.ips:
+					if isinstance(ip.ip, str):
+						intf.ips.append( (socket.AF_INET, ip.ip) )
+					else:
+						intf.ips.append( (socket.AF_INET6, ip.ip[0]) )
+				
+				interfaces[intf.name] = intf
+		elif netifaces:
+			if_names = netifaces.interfaces()
 			
-		
-		self.interfaces = []
-		for if_name in self.multicast_interfaces:
-			mc_intf = lambda: None
-			mc_intf.name = if_name
-			try:
-				mc_intf.index = socket.if_nametoindex(if_name)
-			except:
-				pass
-			
-			if if_name == "lo":
-				continue
-			
-			if ifaddr:
-				mc_intf.ips = []
-				for adapter in ifaddr.get_adapters():
-					if adapter.nice_name != if_name:
-						continue
-					mc_intf.index = adapter.index
-					
-					for ip in adapter.ips:
-						if isinstance(ip.ip, str):
-							mc_intf.ips.append( (socket.AF_INET, ip.ip) )
-						else:
-							mc_intf.ips.append( (socket.AF_INET6, ip.ip[0]) )
-			elif netifaces:
-				# with netifaces module add all IPs, without use the first we get
-				mc_intf.ips = []
+			for if_name in if_names:
+				intf = lambda: None
+				intf.name = if_name
+				intf.adapter = None
+				
+				try:
+					intf.index = socket.if_nametoindex(if_name)
+				except:
+					intf.index = None
+				
+				intf.ips = []
 				for link in netifaces.ifaddresses(if_name).get(netifaces.AF_INET, []):
-					mc_intf.ips.append( (socket.AF_INET, link['addr']) )
+					intf.ips.append( (socket.AF_INET, link['addr']) )
 				for link in netifaces.ifaddresses(if_name).get(netifaces.AF_INET6, []):
-					mc_intf.ips.append( (socket.AF_INET6, link['addr']) )
-			else:
-				import fcntl
-				import struct
-				def get_ip_address(ifname):
-					s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-					return socket.inet_ntoa(fcntl.ioctl(
-						s.fileno(),
-						0x8915,  # SIOCGIFADDR
-						struct.pack('256s', ifname[:15].encode())
-						)[20:24])
+					intf.ips.append( (socket.AF_INET6, link['addr']) )
+				
+				interfaces[intf.name] = intf
+		else:
+			import fcntl
+			import struct
+			
+			if_names = [i[1] for i in socket.if_nameindex()]
+			
+			def get_ip_address(ifname):
+				s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+				return socket.inet_ntoa(fcntl.ioctl(
+					s.fileno(),
+					0x8915,  # SIOCGIFADDR
+					struct.pack('256s', ifname[:15].encode())
+					)[20:24])
+			
+			for if_name in if_names:
+				intf = lambda: None
+				intf.name = if_name
+				intf.adapter = None
+				
+				try:
+					intf.index = socket.if_nametoindex(if_name)
+				except:
+					intf.index = None
 				
 				try:
 					# TODO
-					mc_intf.ips = [(None, get_ip_address(mc_intf.name))]
+					intf.ips = [(None, get_ip_address(intf.name))]
 				except OSError as e:
 					# [Errno 99] Cannot assign requested address
 					# interfaces without IP?
 					if e.errno != 99:
-						print(mc_intf.name, e)
+						print(intf.name, e)
 					continue
 				except Exception as e:
-					print(mc_intf.name, e)
+					print(intf.name, e)
 					continue
+				
+				interfaces[intf.name] = intf
 			
-			if not mc_intf.ips:
+		return interfaces
+	
+	@staticmethod
+	def get_distinct_ip(intf, ip):
+		import ipaddress
+		
+		ipa = ipaddress.ip_address(ip)
+		if ipa.is_link_local:
+			if not sys.platform.startswith('win'):
+				result = ip+"%"+intf.name
+			else:
+				result = ip+"%"+str(intf.index)
+		else:
+			result = ip
+		
+		return result
+	
+	def enable_multicast(self, interfaces=None, mcast_address=None):
+		import socket
+		
+		if interfaces:
+			self.interfaces = interfaces
+		else:
+			self.interfaces = self.get_available_interfaces()
+		
+		self.multicast_interfaces = []
+		for if_name, intf in self.interfaces.items():
+			if if_name == "lo":
 				continue
 			
-			if not hasattr(mc_intf, "endpoints"):
-				mc_intf.endpoints = []
+			if not intf.ips:
+				continue
 			
-			families = [ family for family, ip in mc_intf.ips ]
+			families = [ family for family, ip in intf.ips ]
 			
-			if socket.AF_INET6 in families:
-				mcast_addr = COAP_MCAST_ADDR6_LL
+			if mcast_address:
+				mcast_addr = mcast_address
 			else:
-				mcast_addr = COAP_MCAST_ADDR4
+				if socket.AF_INET6 in families:
+					mcast_addr = COAP_MCAST_ADDR6_LL
+				else:
+					mcast_addr = COAP_MCAST_ADDR4
+			
+			# mcast_addr = self.get_distinct_ip(intf, mcast_addr)
+			mcast_addr = mcast_addr+"%"+str(intf.index)
 			
 			try:
+				if verbosity:
+					print("enabling multicast on", if_name, "with address", mcast_addr, intf.index if isinstance(intf.index, int) else "")
 				self._enable_multicast(mcast_addr, if_name)
 			except Exception as e:
 				print("enabling multicast on", if_name, "failed:", e)
 			
-			self.interfaces.append(mc_intf)
+			self.multicast_interfaces.append(intf)
+	
+	def _enable_multicast(self, multicast_address=COAP_MCAST_ADDR4, interface_name=None):
+		coap_join_mcast_group_intf(self.lcoap_ctx, multicast_address, interface_name)
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
