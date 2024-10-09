@@ -3,6 +3,7 @@ from .llapi import *
 
 contexts = []
 local_unix_socket_counter = 0
+verbosity = 0
 
 COAP_MCAST_ADDR4	= "224.0.1.187"
 COAP_MCAST_ADDR4_6	= "0:0:0:0:0:ffff:e000:01bb"
@@ -12,6 +13,10 @@ COAP_MCAST_ADDR6_VS	= "ff0x::fd" # variable-scope
 COAP_MCAST_ADDR6	= COAP_MCAST_ADDR6_SL
 COAP_DEF_PORT		= 5683
 COAPS_DEF_PORT		= 5684
+
+def set_verbosity(verbosity_arg):
+	global verbosity
+	verbosity = verbosity_arg
 
 def method2code(method):
 	if method == "POST":
@@ -905,7 +910,7 @@ class CoapContext():
 			else:
 				if tx_pdu:
 					print("txtoken", tx_pdu.token, tx_pdu.token_bytes)
-				print("unexpected rxtoken", rx_pdu.token, rx_pdu.token_bytes)
+				print("unexpected rxtoken", rx_pdu.token, rx_pdu.token_bytes, session.token_handlers.keys())
 				
 				if not tx_pdu and (rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_CON or rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_NON):
 					rv = coap_response_t.COAP_RESPONSE_FAIL
@@ -956,6 +961,8 @@ class CoapContext():
 			# this only returns a valid fd if the platform supports epoll
 			self.coap_fd = coap_context_get_coap_fd(self.lcoap_ctx)
 		except OSError as e:
+			if verbosity > 1:
+				print("coap_context_get_coap_fd failed", e)
 			# we use -1 later to determine if we have to use the alternative
 			# event handling
 			self._loop.create_task(self.fd_timeout_cb(100))
