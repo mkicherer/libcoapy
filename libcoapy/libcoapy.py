@@ -347,27 +347,28 @@ class CoapSession():
 		if token in self.token_handlers:
 			orig_tx_pdu = self.token_handlers[token]["pdu"]
 			
-			handler = self.token_handlers[token]["handler"]
-			
-			from inspect import iscoroutinefunction
-			if iscoroutinefunction(handler):
-				import asyncio
+			if "handler" in self.token_handlers[token]:
+				handler = self.token_handlers[token]["handler"]
 				
-				if not self.token_handlers[token].get("observed", False):
-					del self.token_handlers[token]
-				
-				tx_pdu.make_persistent()
-				rx_pdu.make_persistent()
-				
-				asyncio.ensure_future(self.responseHandler_async(orig_tx_pdu, rx_pdu, mid), loop=self.ctx._loop)
-			else:
-				if "handler_data" in self.token_handlers[token]:
-					rv = handler(self, orig_tx_pdu, rx_pdu, mid, self.token_handlers[token]["handler_data"])
+				from inspect import iscoroutinefunction
+				if iscoroutinefunction(handler):
+					import asyncio
+					
+					if not self.token_handlers[token].get("observed", False):
+						del self.token_handlers[token]
+					
+					tx_pdu.make_persistent()
+					rx_pdu.make_persistent()
+					
+					asyncio.ensure_future(self.responseHandler_async(orig_tx_pdu, rx_pdu, mid), loop=self.ctx._loop)
 				else:
-					rv = handler(self, orig_tx_pdu, rx_pdu, mid)
-				
-				if not self.token_handlers[token].get("observed", False):
-					del self.token_handlers[token]
+					if "handler_data" in self.token_handlers[token]:
+						rv = handler(self, orig_tx_pdu, rx_pdu, mid, self.token_handlers[token]["handler_data"])
+					else:
+						rv = handler(self, orig_tx_pdu, rx_pdu, mid)
+					
+					if not self.token_handlers[token].get("observed", False):
+						del self.token_handlers[token]
 		else:
 			if tx_pdu:
 				print("txtoken", tx_pdu.token, tx_pdu.token_bytes)
