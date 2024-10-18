@@ -345,7 +345,9 @@ class CoapSession():
 		token = rx_pdu.token
 		
 		if token in self.token_handlers:
-			orig_tx_pdu = self.token_handlers[token]["pdu"]
+			orig_tx_pdu = self.token_handlers[token]["tx_pdu"]
+			rx_pdu.make_persistent()
+			self.token_handlers[token]["rx_pdu"] = rx_pdu
 			
 			if "handler" in self.token_handlers[token]:
 				handler = self.token_handlers[token]["handler"]
@@ -580,47 +582,35 @@ class CoapClientSession(CoapSession):
 		
 		mid = coap_send(self.lcoap_session, pdu)
 		
+		self.token_handlers[token] = {}
+		self.token_handlers[token]["tx_pdu"] = hl_pdu
+		if observe:
+			self.token_handlers[token]["observed"] = True
 		if response_callback:
-			self.token_handlers[token] = {}
-			self.token_handlers[token]["pdu"] = hl_pdu
 			self.token_handlers[token]["handler"] = response_callback
 			if response_callback_data:
 				self.token_handlers[token]["handler_data"] = response_callback_data
-			if observe:
-				self.token_handlers[token]["observed"] = True
 		
 		# libcoap automatically signals an epoll fd that work has to be done, without
 		# epoll we have to do this ourselves.
 		if self.ctx._loop and self.ctx.coap_fd < 0:
 			self.ctx.fd_callback()
 		
-		return hl_pdu
-	
-	def request_cb(self, session, tx_pdu, rx_pdu, mid, req_userdata):
-		req_userdata.ready = True
-		req_userdata.rx_pdu = rx_pdu
-		rx_pdu.make_persistent()
-		self.ctx.loop_stop = True
+		return self.token_handlers[token]
 	
 	def request(self, *args, **kwargs):
 		"""send a synchronous request and return the response"""
-		req_userdata = lambda: None
-		req_userdata.ready = False
-		
-		kwargs["response_callback"] = self.request_cb
-		kwargs["response_callback_data"] = req_userdata
-		
 		lkwargs={}
 		for key in ("timeout_ms", "io_timeout_ms"):
 			if key in kwargs:
 				lkwargs[key] = kwargs.pop(key)
 		
-		tx_pdu = self.sendMessage(*args, **kwargs)
+		token_hdl = self.sendMessage(*args, **kwargs)
 		
-		self.ctx.loop(**lkwargs)
+		self.ctx.loop(**lkwargs, wait=[token_hdl])
 		
-		if req_userdata.ready:
-			return req_userdata.rx_pdu
+		if "rx_pdu" in token_hdl:
+			return token_hdl["rx_pdu"]
 		else:
 			raise TimeoutError
 	
@@ -637,7 +627,7 @@ class CoapClientSession(CoapSession):
 		kwargs["response_callback"] = self.async_response_callback
 		kwargs["response_callback_data"] = observer
 		
-		tx_pdu = self.sendMessage(*args, **kwargs)
+		tx_pdu = self.sendMessage(*args, **kwargs)["tx_pdu"]
 		tx_pdu.make_persistent()
 		observer.tx_pdu = tx_pdu
 		
@@ -908,14 +898,24 @@ class CoapContext():
 			raise CoapUnexpectedError("coap_io_process()")
 		return res
 	
-	def loop(self, timeout_ms=None, io_timeout_ms=100):
+	def loop(self, timeout_ms=None, io_timeout_ms=100, wait=None):
+		def check_wait(wait):
+			for token_hdl in wait:
+				if "rx_pdu" not in token_hdl:
+					return False
+			return True
+		
 		self.loop_stop = False
 		if timeout_ms==None:
 			while not self.loop_stop:
 				self.io_process(io_timeout_ms)
+				if wait and check_wait(wait):
+					break
 		else:
 			while not self.loop_stop and timeout_ms > 0:
 				timeout_ms -= self.io_process(min(io_timeout_ms, timeout_ms))
+				if wait and check_wait(wait):
+					break
 	
 	def stop_loop(self):
 		if self._loop:
