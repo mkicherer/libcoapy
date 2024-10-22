@@ -997,7 +997,7 @@ class CoapContext():
 		if self.coap_fd >= 0:
 			try:
 				self.io_process(COAP_IO_NO_WAIT)
-			except Exception as e:
+			except CoapUnexpectedError as e:
 				print("coap_io_process", e)
 			
 			timeout_ms = coap_io_prepare_epoll(self.lcoap_ctx, now)
