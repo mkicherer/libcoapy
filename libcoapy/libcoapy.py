@@ -607,7 +607,7 @@ class CoapClientSession(CoapSession):
 		
 		token_hdl = self.sendMessage(*args, **kwargs)
 		
-		self.ctx.loop(**lkwargs, wait=[token_hdl])
+		self.ctx.loop(**lkwargs, rx_wait_list=[token_hdl])
 		
 		if "rx_pdu" in token_hdl:
 			return token_hdl["rx_pdu"]
@@ -898,9 +898,9 @@ class CoapContext():
 			raise CoapUnexpectedError("coap_io_process()")
 		return res
 	
-	def loop(self, timeout_ms=None, io_timeout_ms=100, wait=None):
-		def check_wait(wait):
-			for token_hdl in wait:
+	def loop(self, timeout_ms=None, io_timeout_ms=100, rx_wait_list=None):
+		def all_responses_received(rx_wait_list):
+			for token_hdl in rx_wait_list:
 				if "rx_pdu" not in token_hdl:
 					return False
 			return True
@@ -909,12 +909,12 @@ class CoapContext():
 		if timeout_ms==None:
 			while not self.loop_stop:
 				self.io_process(io_timeout_ms)
-				if wait and check_wait(wait):
+				if rx_wait_list and all_responses_received(rx_wait_list):
 					break
 		else:
 			while not self.loop_stop and timeout_ms > 0:
 				timeout_ms -= self.io_process(min(io_timeout_ms, timeout_ms))
-				if wait and check_wait(wait):
+				if rx_wait_list and all_responses_received(rx_wait_list):
 					break
 	
 	def stop_loop(self):
