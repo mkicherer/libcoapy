@@ -281,6 +281,11 @@ class CoapSession():
 		
 		self.token_handlers = {}
 	
+	def release(self):
+		if self.lcoap_session!=None:
+			coap_session_release(self.lcoap_session)
+			self.lcoap_session = None
+	
 	def getInterfaceIndex(self):
 		return coap_session_get_ifindex(self.lcoap_session)
 	
@@ -528,6 +533,7 @@ class CoapClientSession(CoapSession):
 		if getattr(self, "local_addr_unix_path", None):
 			if os.path.exists(self.local_addr_unix_path):
 				os.unlink(self.local_addr_unix_path);
+		self.release()
 	
 	def sendMessage(self,
 				path=None,
