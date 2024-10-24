@@ -32,6 +32,14 @@ def method2code(method):
 	elif method == "IPATCH":
 		return coap_pdu_code_t.COAP_REQUEST_CODE_IPATCH
 
+def get_string_by_buffer_update(func, default_size):
+	buffer = (default_size*ct.c_char)()
+	while True:
+		string = func(buffer, len(buffer))
+		if len(string)+1<len(buffer):
+			return string.decode()
+		buffer = ((len(buffer)+default_size)*ct.c_char)()
+
 def addr2str(addr):
 	s_len = 128
 	s_ptr_t = ct.c_uint8*s_len
@@ -55,6 +63,37 @@ class UnresolvableAddress(Exception):
 
 class CoapUnexpectedError(Exception):
 	pass
+
+def CoapPackageVersion():
+	return coap_package_version().decode()
+
+def CoapStringTlsSupport():
+	return get_string_by_buffer_update(coap_string_tls_support, 128)
+
+def CoapStringTlsVersion():
+	return get_string_by_buffer_update(coap_string_tls_version, 128)
+
+class CoapGetTlsLibraryVersion():
+	def __init__(self):
+		self.contents = coap_get_tls_library_version().contents
+	
+	@property
+	def version(self):
+		return self.contents.version
+	
+	@property
+	def type(self):
+		return coap_tls_library_t(self.contents.type)
+	
+	@property
+	def built_version(self):
+		return self.contents.built_version
+	
+	def as_dict(self):
+		return {'version': self.version, 'type': self.type, 'built_version': self.built_version}
+	
+	def __str__(self):
+		return str(self.as_dict())
 
 class CoapPDU():
 	def __init__(self, pdu=None, session=None):
