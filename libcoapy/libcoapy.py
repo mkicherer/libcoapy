@@ -129,7 +129,7 @@ class CoapPDU():
 	def cancelObservation(self):
 		coap_cancel_observe(self.session.lcoap_session, coap_pdu_get_token(self.lcoap_pdu), coap_pdu_type_t.COAP_MESSAGE_CON)
 		if self.token in self.session.token_handlers:
-			del self.session.token_handlers[self.token]
+			self.session.token_handlers[self.token]["observe"] = False
 	
 	@property
 	def token_bytes(self):
@@ -694,7 +694,7 @@ class CoapObserver():
 		
 		coap_cancel_observe(self.tx_pdu.session.lcoap_session, self.tx_pdu._token, self.tx_pdu.type)
 		if self.tx_pdu.token in self.tx_pdu.session.token_handlers:
-			del self.tx_pdu.session.token_handlers[self.tx_pdu.token]
+			self.tx_pdu.session.token_handlers[self.tx_pdu.token]["observe"] = False
 		
 		self._stop = True
 		self.ev.set()
