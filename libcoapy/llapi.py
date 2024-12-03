@@ -20,6 +20,15 @@ class ctypes_enum_gen(enum.IntEnum):
 	def __str__(self):
 		return self.name
 
+coap_tls_library_t = ctypes_enum_gen("coap_tls_library_t", [
+	"COAP_TLS_LIBRARY_NOTLS",
+	"COAP_TLS_LIBRARY_TINYDTLS",
+	"COAP_TLS_LIBRARY_OPENSSL",
+	"COAP_TLS_LIBRARY_GNUTLS",
+	"COAP_TLS_LIBRARY_MBEDTLS",
+	"COAP_TLS_LIBRARY_WOLFSSL",
+	], start=0)
+
 coap_log_t = ctypes_enum_gen("coap_log_t", [
 	"COAP_LOG_EMERG",
 	"COAP_LOG_ALERT",
@@ -383,6 +392,14 @@ class coap_dtls_spsk_info_t(LStructure):
 		("key", coap_bin_const_t),
 		]
 
+class coap_tls_version_t(LStructure):
+	_fields_ = [
+		("version", ct.c_uint64),
+		("type", coap_tls_library_t.get_ctype()),
+		("built_version", ct.c_uint64),
+		]
+
+
 # looks like ctypes does not support coap_response_t (enum) as return value
 coap_response_handler_t = ct.CFUNCTYPE(ct.c_int, ct.POINTER(coap_session_t), ct.POINTER(coap_pdu_t), ct.POINTER(coap_pdu_t), coap_mid_t)
 coap_release_large_data_t = ct.CFUNCTYPE(None, ct.POINTER(coap_session_t), ct.py_object)
@@ -498,6 +515,10 @@ def bytes2uint8p(b, cast=c_uint8_p):
 library_functions = [
 	{ "name": "coap_startup", "restype": None },
 	{ "name": "coap_cleanup", "restype": None },
+	{ "name": "coap_package_version", "restype": ct.c_char_p },
+	{ "name": "coap_string_tls_support", "restype": ct.c_char_p, "args": [ct.c_char_p, ct.c_size_t] },
+	{ "name": "coap_string_tls_version", "restype": ct.c_char_p, "args": [ct.c_char_p, ct.c_size_t] },
+	{ "name": "coap_get_tls_library_version", "restype": ct.POINTER(coap_tls_version_t) },
 	{ "name": "coap_set_log_level", "args": [coap_log_t], "restype": None },
 	{ "name": "coap_split_uri", "args": [ct.POINTER(ct.c_uint8), ct.c_size_t, ct.POINTER(coap_uri_t)] },
 	{ "name": "coap_split_path", "args": [ct.c_char_p, ct.c_size_t, ct.c_char_p, ct.POINTER(ct.c_size_t)] },
