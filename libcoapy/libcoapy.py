@@ -580,8 +580,7 @@ class CoapClientSession(CoapSession):
 		
 		lkwargs={}
 		if "timeout_ms" in kwargs:
-			lkwargs["timeout_ms"] = kwargs["timeout_ms"]
-			del kwargs["timeout_ms"]
+			lkwargs["timeout_ms"] = kwargs.pop("timeout_ms")
 		
 		tx_pdu = self.sendMessage(*args, **kwargs)
 		
@@ -590,7 +589,7 @@ class CoapClientSession(CoapSession):
 		if req_userdata.ready:
 			return req_userdata.rx_pdu
 		else:
-			return None
+			raise TimeoutError
 	
 	def async_response_callback(self, session, tx_msg, rx_msg, mid, observer):
 		rx_msg.make_persistent()
