@@ -869,14 +869,10 @@ class CoapContext():
 	def responseHandler(self, lcoap_session, pdu_sent, pdu_recv, mid):
 		rv = None
 		
-		session = None
-		for s in self.sessions:
-			if ct.cast(s.lcoap_session, ct.c_void_p).value == ct.cast(lcoap_session, ct.c_void_p).value:
-				session = s
-				break
+		session = coap_session_get_app_data(lcoap_session)
 		
 		if not session:
-			print("unexpected session", lcoap_session, file=sys.stderr)
+			print("session object not set", lcoap_session, file=sys.stderr)
 		else:
 			rx_pdu = CoapPDU(pdu_recv, session)
 			if pdu_sent:
