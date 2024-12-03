@@ -946,7 +946,7 @@ class CoapContext():
 			return coap_response_t.COAP_RESPONSE_OK
 	
 	def io_process(self, timeout_ms=COAP_IO_WAIT):
-		if timeout_ms < 0 or timeout_ms > COAP_IO_NO_WAIT.value:
+		if timeout_ms < 0 or timeout_ms > COAP_IO_NO_WAIT:
 			raise ValueError
 		res = coap_io_process(self.lcoap_ctx, timeout_ms)
 		if res < 0:
