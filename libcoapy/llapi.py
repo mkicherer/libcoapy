@@ -503,6 +503,7 @@ library_functions = [
 	{ "name": "coap_split_path", "args": [ct.c_char_p, ct.c_size_t, ct.c_char_p, ct.POINTER(ct.c_size_t)] },
 	{ "name": "coap_new_context", "args": [ct.POINTER(coap_address_t)], "restype": ct.POINTER(coap_context_t) },
 	{ "name": "coap_new_client_session", "args": [ct.POINTER(coap_context_t), ct.POINTER(coap_address_t), ct.POINTER(coap_address_t), coap_proto_t], "restype": ct.POINTER(coap_session_t) },
+	{ "name": "coap_session_release", "args": [ct.POINTER(coap_session_t)], "restype": None },
 	{ "name": "coap_resolve_address_info", "args": [
 			ct.POINTER(coap_str_const_t),
 			ct.c_uint16,
