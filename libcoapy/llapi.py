@@ -153,7 +153,7 @@ COAP_OBSERVE_ESTABLISH = 0
 COAP_OBSERVE_CANCEL    = 1
 
 COAP_IO_WAIT    = 0
-COAP_IO_NO_WAIT = ct.c_uint32(-1)
+COAP_IO_NO_WAIT = ct.c_uint32(-1).value
 
 class coap_request_t(ctypes_enum_gen):
 	COAP_REQUEST_GET     = 1
