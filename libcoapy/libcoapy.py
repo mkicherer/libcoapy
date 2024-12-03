@@ -326,6 +326,57 @@ class CoapSession():
 	@property
 	def local_ip(self):
 		return addr2str(coap_session_get_addr_local(self.lcoap_session))
+	
+	async def responseHandler_async(self, pdu_sent, pdu_recv, mid):
+		if "handler_data" in handler_dict:
+			await self.token_handlers["handler"](self, pdu_sent, pdu_recv, mid, self.token_handlers["handler_data"])
+		else:
+			await self.token_handlers["handler"](self, pdu_sent, pdu_recv, mid)
+	
+	def responseHandler(self, pdu_sent, pdu_recv, mid):
+		rv = None
+		
+		rx_pdu = CoapPDU(pdu_recv, self)
+		if pdu_sent:
+			tx_pdu = CoapPDU(pdu_sent, self)
+		else:
+			tx_pdu = None
+		
+		token = rx_pdu.token
+		
+		if token in self.token_handlers:
+			orig_tx_pdu = self.token_handlers[token]["pdu"]
+			
+			handler = self.token_handlers[token]["handler"]
+			
+			from inspect import iscoroutinefunction
+			if iscoroutinefunction(handler):
+				import asyncio
+				
+				if not self.token_handlers[token].get("observed", False):
+					del self.token_handlers[token]
+				
+				tx_pdu.make_persistent()
+				rx_pdu.make_persistent()
+				
+				asyncio.ensure_future(self.responseHandler_async(orig_tx_pdu, rx_pdu, mid), loop=self.ctx._loop)
+			else:
+				if "handler_data" in self.token_handlers[token]:
+					rv = handler(self, orig_tx_pdu, rx_pdu, mid, self.token_handlers[token]["handler_data"])
+				else:
+					rv = handler(self, orig_tx_pdu, rx_pdu, mid)
+				
+				if not self.token_handlers[token].get("observed", False):
+					del self.token_handlers[token]
+		else:
+			if tx_pdu:
+				print("txtoken", tx_pdu.token, tx_pdu.token_bytes)
+			print("unexpected rxtoken", rx_pdu.token, rx_pdu.token_bytes)
+			
+			if not tx_pdu and (rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_CON or rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_NON):
+				return coap_response_t.COAP_RESPONSE_FAIL
+		
+		return coap_response_t.COAP_RESPONSE_OK if rv is None else rv
 
 class CoapClientSession(CoapSession):
 	def __init__(self, ctx, uri_str=None, hint=None, key=None, sni=None):
@@ -840,64 +891,13 @@ class CoapContext():
 		
 		coap_context_set_psk2(self.lcoap_ctx, ct.byref(self.dtls_spsk))
 	
-	async def responseHandler_async(self, lcoap_session, pdu_sent, pdu_recv, mid, handler_dict):
-		if "handler_data" in handler_dict:
-			await handler_dict["handler"](lcoap_session, pdu_sent, pdu_recv, mid, handler_dict["handler_data"])
-		else:
-			await handler_dict["handler"](lcoap_session, pdu_sent, pdu_recv, mid)
-	
 	def responseHandler(self, lcoap_session, pdu_sent, pdu_recv, mid):
-		rv = None
-		
 		session = coap_session_get_app_data(lcoap_session)
-		
-		if not session:
-			print("session object not set", lcoap_session, file=sys.stderr)
+		if session:
+			return session.responseHandler(pdu_sent, pdu_recv, mid)
 		else:
-			rx_pdu = CoapPDU(pdu_recv, session)
-			if pdu_sent:
-				tx_pdu = CoapPDU(pdu_sent, session)
-			else:
-				tx_pdu = None
-			
-			token = rx_pdu.token
-			
-			if token in session.token_handlers:
-				orig_tx_pdu = session.token_handlers[token]["pdu"]
-				
-				handler = session.token_handlers[token]["handler"]
-				
-				from inspect import iscoroutinefunction
-				if iscoroutinefunction(handler):
-					import asyncio
-					
-					if not session.token_handlers[token].get("observed", False):
-						del session.token_handlers[token]
-					
-					tx_pdu.make_persistent()
-					rx_pdu.make_persistent()
-					
-					asyncio.ensure_future(self.responseHandler_async(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]), loop=self._loop)
-				else:
-					if "handler_data" in session.token_handlers[token]:
-						rv = handler(session, orig_tx_pdu, rx_pdu, mid, session.token_handlers[token]["handler_data"])
-					else:
-						rv = handler(session, orig_tx_pdu, rx_pdu, mid)
-					
-					if not session.token_handlers[token].get("observed", False):
-						del session.token_handlers[token]
-			else:
-				if tx_pdu:
-					print("txtoken", tx_pdu.token, tx_pdu.token_bytes)
-				print("unexpected rxtoken", rx_pdu.token, rx_pdu.token_bytes, session.token_handlers.keys())
-				
-				if not tx_pdu and (rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_CON or rx_pdu.type == coap_pdu_type_t.COAP_MESSAGE_NON):
-					rv = coap_response_t.COAP_RESPONSE_FAIL
-		
-		if rv is None:
-			rv = coap_response_t.COAP_RESPONSE_OK
-		
-		return rv
+			print("session object not set", lcoap_session, file=sys.stderr)
+			return coap_response_t.COAP_RESPONSE_OK
 	
 	def io_process(self, timeout_ms=COAP_IO_WAIT):
 		if timeout_ms < 0 or timeout_ms > COAP_IO_NO_WAIT.value:
