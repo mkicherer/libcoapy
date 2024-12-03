@@ -92,6 +92,8 @@ class CoapPDU():
 		coap_pdu_set_code(self.lcoap_pdu, value)
 	
 	def make_persistent(self):
+		if hasattr(self, "payload_copy"):
+			return
 		if not self.payload_ptr:
 			self.getPayload()
 		self.payload_copy = ct.string_at(self.payload_ptr, self.size.value)
@@ -346,8 +348,11 @@ class CoapSession():
 		
 		if token in self.token_handlers:
 			orig_tx_pdu = self.token_handlers[token]["tx_pdu"]
-			rx_pdu.make_persistent()
-			self.token_handlers[token]["rx_pdu"] = rx_pdu
+			self.token_handlers[token]["ready"] = True
+			
+			if self.token_handlers[token].get("save_rx_pdu", False):
+				rx_pdu.make_persistent()
+				self.token_handlers[token]["rx_pdu"] = rx_pdu
 			
 			if "handler" in self.token_handlers[token]:
 				handler = self.token_handlers[token]["handler"]
@@ -523,14 +528,15 @@ class CoapClientSession(CoapSession):
 				os.unlink(self.local_addr_unix_path);
 	
 	def sendMessage(self,
-				 path=None,
-				 payload=None,
-				 pdu_type=coap_pdu_type_t.COAP_MESSAGE_CON,
-				 code=coap_pdu_code_t.COAP_REQUEST_CODE_GET,
-				 observe=False,
-				 query=None,
-				 response_callback=None,
-				 response_callback_data=None
+				path=None,
+				payload=None,
+				pdu_type=coap_pdu_type_t.COAP_MESSAGE_CON,
+				code=coap_pdu_code_t.COAP_REQUEST_CODE_GET,
+				observe=False,
+				query=None,
+				save_rx_pdu=False,
+				response_callback=None,
+				response_callback_data=None
 		):
 		"""create a PDU with given parameters, send and return it"""
 		
@@ -586,6 +592,8 @@ class CoapClientSession(CoapSession):
 		self.token_handlers[token]["tx_pdu"] = hl_pdu
 		if observe:
 			self.token_handlers[token]["observed"] = True
+		if save_rx_pdu:
+			self.token_handlers[token]["save_rx_pdu"] = True
 		if response_callback:
 			self.token_handlers[token]["handler"] = response_callback
 			if response_callback_data:
@@ -605,11 +613,11 @@ class CoapClientSession(CoapSession):
 			if key in kwargs:
 				lkwargs[key] = kwargs.pop(key)
 		
-		token_hdl = self.sendMessage(*args, **kwargs)
+		token_hdl = self.sendMessage(*args, **kwargs, save_rx_pdu=True)
 		
 		self.ctx.loop(**lkwargs, rx_wait_list=[token_hdl])
 		
-		if "rx_pdu" in token_hdl:
+		if token_hdl.get("ready", False):
 			return token_hdl["rx_pdu"]
 		else:
 			raise TimeoutError
@@ -901,7 +909,7 @@ class CoapContext():
 	def loop(self, timeout_ms=None, io_timeout_ms=100, rx_wait_list=None):
 		def all_responses_received(rx_wait_list):
 			for token_hdl in rx_wait_list:
-				if "rx_pdu" not in token_hdl:
+				if not token_hdl.get("ready", False):
 					return False
 			return True
 		
