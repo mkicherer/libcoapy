@@ -48,6 +48,14 @@ def addr2str(addr):
 	
 	return ct.string_at(s_ptr, new_len).decode()
 
+def ip2str(addr):
+	s_len = 128
+	s_ptr_t = ct.c_uint8*s_len
+	s_ptr = s_ptr_t()
+	coap_print_ip_addr(addr, s_ptr, s_len)
+	
+	return ct.cast(s_ptr, ct.c_char_p).value.decode()
+
 def getarg(args, kwargs, idx, name, default=None):
 	if len(args) >= idx:
 		return args[idx]
@@ -369,11 +377,11 @@ class CoapSession():
 	
 	@property
 	def remote_ip(self):
-		return addr2str(coap_session_get_addr_remote(self.lcoap_session))
+		return ip2str(coap_session_get_addr_remote(self.lcoap_session))
 	
 	@property
 	def local_ip(self):
-		return addr2str(coap_session_get_addr_local(self.lcoap_session))
+		return ip2str(coap_session_get_addr_local(self.lcoap_session))
 	
 	async def responseHandler_async(self, pdu_sent, pdu_recv, mid):
 		if "handler_data" in handler_dict:
