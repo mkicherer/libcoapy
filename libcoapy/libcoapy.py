@@ -81,6 +81,15 @@ def CoapStringTlsSupport():
 def CoapStringTlsVersion():
 	return get_string_by_buffer_update(coap_string_tls_version, 128)
 
+def allocateToken():
+	token = coap_binary_t()
+	token.length = 8
+	
+	token_t = ct.c_ubyte * token.length
+	token.s = token_t()
+	
+	return token
+
 class CoapGetTlsLibraryVersion():
 	def __init__(self):
 		self.contents = coap_get_tls_library_version().contents
@@ -189,11 +198,7 @@ class CoapPDU():
 		return int.from_bytes(self.token_bytes, byteorder=sys.byteorder)
 	
 	def newToken(self):
-		self._token = coap_binary_t()
-		self._token.length = 8
-		
-		token_t = ct.c_ubyte * self._token.length
-		self._token.s = token_t()
+		self._token = allocateToken()
 		
 		coap_session_new_token(self.session.lcoap_session, ct.byref(self._token.ctype("length")), self._token.s)
 		coap_add_token(self.lcoap_pdu, self._token.length, self._token.s)
