@@ -182,7 +182,7 @@ class CoapPDU():
 		self.session.ctx.pdu_cache.remove(self)
 	
 	def cancelObservation(self):
-		coap_cancel_observe(self.session.lcoap_session, coap_pdu_get_token(self.lcoap_pdu), coap_pdu_type_t.COAP_MESSAGE_CON)
+		coap_cancel_observe(self.session.lcoap_session, self.lcoap_token, self.type)
 		if self.token in self.session.token_handlers:
 			self.session.token_handlers[self.token]["observe"] = False
 	
