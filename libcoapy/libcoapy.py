@@ -160,8 +160,8 @@ class CoapPDU():
 		self.lcoap_pdu = coap_pdu_duplicate(
 			self.lcoap_pdu,
 			self.session.lcoap_session,
-			self._token.length,
-			self._token.s,
+			self.lcoap_token.length,
+			self.lcoap_token.s,
 			None)
 	
 	@property
@@ -187,10 +187,14 @@ class CoapPDU():
 			self.session.token_handlers[self.token]["observe"] = False
 	
 	@property
+	def lcoap_token(self):
+		if not self._token:
+			self._token = coap_pdu_get_token(self.lcoap_pdu)
+		return self._token
+	
+	@property
 	def token_bytes(self):
-		self._token = coap_pdu_get_token(self.lcoap_pdu)
-		
-		return ct.string_at(self._token.s, self._token.length)
+		return ct.string_at(self.lcoap_token.s, self.lcoap_token.length)
 	
 	@property
 	def token(self):
