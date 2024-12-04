@@ -148,11 +148,10 @@ class CoapPDU():
 		coap_pdu_set_code(self.lcoap_pdu, value)
 	
 	def make_persistent(self):
-		if hasattr(self, "payload_copy"):
-			return
-		if not self.payload_ptr:
-			self.getPayload()
-		self.payload_copy = ct.string_at(self.payload_ptr, self.size.value)
+		if not hasattr(self, "payload_copy"):
+			if not self.payload_ptr:
+				self.getPayload()
+			self.payload_copy = ct.string_at(self.payload_ptr, self.size.value)
 		
 		self._pdu_type = self.type
 		
