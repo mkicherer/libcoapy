@@ -753,9 +753,7 @@ class CoapObserver():
 		if self._stop:
 			return
 		
-		coap_cancel_observe(self.tx_pdu.session.lcoap_session, self.tx_pdu._token, self.tx_pdu.type)
-		if self.tx_pdu.token in self.tx_pdu.session.token_handlers:
-			self.tx_pdu.session.token_handlers[self.tx_pdu.token]["observe"] = False
+		self.tx_pdu.cancelObservation()
 		
 		self._stop = True
 		self.ev.set()
