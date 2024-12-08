@@ -27,5 +27,8 @@ script-files = [
     "examples/coap-gui"
 ]
 
+[tool.setuptools.packages.find]
+include = ["libcoapy*"]
+
 [project.optional-dependencies]
 ifaddr = ["ifaddr"]
