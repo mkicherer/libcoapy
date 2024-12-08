@@ -620,7 +620,7 @@ class CoapClientSession(CoapSession):
 			if isinstance(path, str):
 				path = path.encode()
 			
-			coap_path_into_optlist(ct.cast(ct.c_char_p(path), c_uint8_p), len(path), COAP_OPTION_URI_PATH, ct.byref(optlist))
+			coap_path_into_optlist(ct.cast(ct.c_char_p(path), ct.POINTER(ct.c_uint8)), len(path), COAP_OPTION_URI_PATH, ct.byref(optlist))
 		else:
 			coap_uri_into_optlist(ct.byref(self.uri), ct.byref(self.dest_addr), ct.byref(optlist), 1)
 		
@@ -638,7 +638,7 @@ class CoapClientSession(CoapSession):
 			if isinstance(query, str):
 				query = query.encode()
 			
-			coap_query_into_optlist(ct.cast(ct.c_char_p(query), c_uint8_p), len(query), COAP_OPTION_URI_QUERY, ct.byref(optlist))
+			coap_query_into_optlist(ct.cast(ct.c_char_p(query), ct.POINTER(ct.c_uint8)), len(query), COAP_OPTION_URI_QUERY, ct.byref(optlist))
 		
 		if optlist:
 			rv = coap_add_optlist_pdu(pdu, ct.byref(optlist))
@@ -839,7 +839,7 @@ class CoapContext():
 		else:
 			uri.bytes = uri_str
 		
-		coap_split_uri(ct.cast(ct.c_char_p(uri.bytes), c_uint8_p), len(uri.bytes), ct.byref(uri))
+		coap_split_uri(ct.cast(ct.c_char_p(uri.bytes), ct.POINTER(ct.c_uint8)), len(uri.bytes), ct.byref(uri))
 		
 		return uri
 	
