@@ -8,7 +8,7 @@
 		
 		"fd_set", "epoll_event",
 		],
-	"include": { 2: "sockaddr" },
+	"include": { 2: ["sockaddr", "local"], },
 	"functions": {
 		"coap_split_uri": {
 			3: ["in", "out"],
