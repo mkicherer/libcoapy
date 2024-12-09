@@ -42,7 +42,7 @@ def get_string_by_buffer_update(func, default_size):
 
 def addr2str(addr):
 	s_len = 128
-	s_ptr_t = ct.c_uint8*s_len
+	s_ptr_t = ct.c_char*s_len
 	s_ptr = s_ptr_t()
 	new_len = coap_print_addr(addr, s_ptr, s_len)
 	
@@ -50,7 +50,7 @@ def addr2str(addr):
 
 def ip2str(addr):
 	s_len = 128
-	s_ptr_t = ct.c_uint8*s_len
+	s_ptr_t = ct.c_char*s_len
 	s_ptr = s_ptr_t()
 	coap_print_ip_addr(addr, s_ptr, s_len)
 	
@@ -308,7 +308,7 @@ class CoapResource():
 		
 		self.handlers[req_pdu.code](self, session, req_pdu, lcoap_query.contents if lcoap_query else None, resp_pdu)
 		
-		if resp_pdu.code == coap_pdu_code_t.COAP_EMTPY_CODE:
+		if resp_pdu.code == coap_pdu_code_t.COAP_EMPTY_CODE:
 			resp_pdu.code = coap_pdu_code_t.COAP_RESPONSE_CODE_CONTENT
 	
 	def addHandler(self, handler, code=coap_request_t.COAP_REQUEST_GET):
