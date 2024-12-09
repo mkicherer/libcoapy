@@ -685,7 +685,7 @@ coap_dtls_key_t._fields_ = [
 	("key", coap_dtls_key_t_key),
 	]
 
-coap_dtls_pki_sni_callback_t = ct.CFUNCTYPE(ct.POINTER(coap_dtls_key_t), ct.POINTER(ct.c_int8), ct.py_object)
+coap_dtls_pki_sni_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(ct.c_int8), ct.py_object)
 coap_dtls_pki_t._fields_ = [
 	("version", ct.c_uint8),
 	("verify_peer_cert", ct.c_uint8),
@@ -716,7 +716,7 @@ coap_dtls_cpsk_info_t._fields_ = [
 	("key", coap_bin_const_t),
 	]
 
-coap_dtls_ih_callback_t = ct.CFUNCTYPE(ct.POINTER(coap_dtls_cpsk_info_t), ct.POINTER(coap_str_const_t), ct.POINTER(coap_session_t), ct.py_object)
+coap_dtls_ih_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(coap_str_const_t), ct.POINTER(coap_session_t), ct.py_object)
 coap_dtls_cpsk_t._fields_ = [
 	("version", ct.c_uint8),
 	("ec_jpake", ct.c_uint8),
@@ -733,8 +733,8 @@ coap_dtls_spsk_info_t._fields_ = [
 	("key", coap_bin_const_t),
 	]
 
-coap_dtls_id_callback_t = ct.CFUNCTYPE(ct.POINTER(coap_bin_const_t), ct.POINTER(coap_bin_const_t), ct.POINTER(coap_session_t), ct.py_object)
-coap_dtls_psk_sni_callback_t = ct.CFUNCTYPE(ct.POINTER(coap_dtls_spsk_info_t), ct.POINTER(ct.c_int8), ct.POINTER(coap_session_t), ct.py_object)
+coap_dtls_id_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(coap_bin_const_t), ct.POINTER(coap_session_t), ct.py_object)
+coap_dtls_psk_sni_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(ct.c_int8), ct.POINTER(coap_session_t), ct.py_object)
 coap_dtls_spsk_t._fields_ = [
 	("version", ct.c_uint8),
 	("ec_jpake", ct.c_uint8),
