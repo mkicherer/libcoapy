@@ -806,7 +806,13 @@ class CoapContext():
 				self.sessions.remove(session)
 		
 		if hasattr(self, "event_callback"):
-			self.event_callback(self, session, event_type)
+			ret = self.event_callback(self, session, event_type)
+			if ret is None:
+				return 0
+			else:
+				return ret
+		else:
+			return 0
 	
 	def nackHandler(self, ll_session, pdu, nack_type, mid):
 		nack_type = coap_nack_reason_t(nack_type)
