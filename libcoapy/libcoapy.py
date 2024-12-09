@@ -531,10 +531,10 @@ class CoapClientSession(CoapSession):
 			if isinstance(key, str):
 				key = key.encode()
 			
-			self.dtls_psk.psk_info.hint.s = bytes2uint8p(hint)
+			self.dtls_psk.psk_info.identity.s = bytes2uint8p(hint)
 			self.dtls_psk.psk_info.key.s = bytes2uint8p(key)
 			
-			self.dtls_psk.psk_info.hint.length = len(hint) if hint else 0
+			self.dtls_psk.psk_info.identity.length = len(hint) if hint else 0
 			self.dtls_psk.psk_info.key.length = len(key) if key else 0
 		
 			self.lcoap_session = coap_new_client_session_psk2(self.ctx.lcoap_ctx,
@@ -570,10 +570,10 @@ class CoapClientSession(CoapSession):
 		if isinstance(key, str):
 			key = key.encode()
 		
-		result.hint.s = bytes2uint8p(hint)
+		result.identity.s = bytes2uint8p(hint)
 		result.key.s = bytes2uint8p(key)
 		
-		result.hint.length = len(hint)
+		result.identity.length = len(hint)
 		result.key.length = len(key)
 		
 		self.dtls_psk.cb_data = ct.byref(result)
