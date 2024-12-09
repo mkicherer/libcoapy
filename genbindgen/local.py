@@ -8,3 +8,8 @@ def genbindgen_pre_ct_call_hook(fdict, nargs, kwargs):
 	if not libcoap_initialized:
 		libcoap_initialized = True
 		coap_startup()
+
+def bytes2uint8p(b, cast=ct.POINTER(ct.c_ubyte)):
+	if b is None:
+		return None
+	return ct.cast(ct.create_string_buffer(b), cast)
