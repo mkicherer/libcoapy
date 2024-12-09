@@ -396,7 +396,7 @@ coap_option_num_t = ct.c_ushort
 coap_opt_t = ct.c_uint8
 coap_option_t._fields_ = [
 	("delta", ct.c_ushort),
-	("length", ct.c_ulong),
+	("length", ct.c_size_t),
 	("value", ct.POINTER(ct.c_uint8)),
 	]
 
@@ -407,7 +407,7 @@ coap_opt_filter_t._fields_ = [
 	]
 
 coap_opt_iterator_t._fields_ = [
-	("length", ct.c_ulong),
+	("length", ct.c_size_t),
 	("number", ct.c_ushort),
 	("bad", ct.c_uint),
 	("filtered", ct.c_uint),
@@ -418,12 +418,12 @@ coap_opt_iterator_t._fields_ = [
 coap_optlist_t._fields_ = [
 	("next", ct.POINTER(coap_optlist_t)),
 	("number", ct.c_ushort),
-	("length", ct.c_ulong),
+	("length", ct.c_size_t),
 	("data", ct.POINTER(ct.c_uint8)),
 	]
 
 coap_const_char_ptr_t._fields_ = [
-	("s_byte", ct.POINTER(ct.c_int8)),
+	("s_byte", ct.c_char_p),
 	("u_byte", ct.POINTER(ct.c_uint8)),
 	]
 
@@ -594,7 +594,7 @@ coap_tls_version_t._fields_ = [
 	]
 
 coap_dtls_security_setup_t = ct.CFUNCTYPE(ct.c_int, ct.py_object, ct.POINTER(coap_dtls_pki_t))
-coap_dtls_cn_callback_t = ct.CFUNCTYPE(ct.c_int, ct.POINTER(ct.c_int8), ct.POINTER(ct.c_uint8), ct.c_ulong, ct.POINTER(coap_session_t), ct.c_uint, ct.c_int, ct.py_object)
+coap_dtls_cn_callback_t = ct.CFUNCTYPE(ct.c_int, ct.c_char_p, ct.POINTER(ct.c_uint8), ct.c_ulong, ct.POINTER(coap_session_t), ct.c_uint, ct.c_int, ct.py_object)
 class coap_asn1_privatekey_type_t(ctypes_enum_gen):
 	COAP_ASN1_PKEY_NONE = 0
 	COAP_ASN1_PKEY_RSA = 1
@@ -620,35 +620,35 @@ class coap_pki_key_t(ctypes_enum_gen):
 	COAP_PKI_KEY_DEFINE = 4
 
 coap_pki_key_pem_t._fields_ = [
-	("ca_file", ct.POINTER(ct.c_int8)),
-	("public_cert", ct.POINTER(ct.c_int8)),
-	("private_key", ct.POINTER(ct.c_int8)),
+	("ca_file", ct.c_char_p),
+	("public_cert", ct.c_char_p),
+	("private_key", ct.c_char_p),
 	]
 
 coap_pki_key_pem_buf_t._fields_ = [
 	("ca_cert", ct.POINTER(ct.c_uint8)),
 	("public_cert", ct.POINTER(ct.c_uint8)),
 	("private_key", ct.POINTER(ct.c_uint8)),
-	("ca_cert_len", ct.c_ulong),
-	("public_cert_len", ct.c_ulong),
-	("private_key_len", ct.c_ulong),
+	("ca_cert_len", ct.c_size_t),
+	("public_cert_len", ct.c_size_t),
+	("private_key_len", ct.c_size_t),
 	]
 
 coap_pki_key_asn1_t._fields_ = [
 	("ca_cert", ct.POINTER(ct.c_uint8)),
 	("public_cert", ct.POINTER(ct.c_uint8)),
 	("private_key", ct.POINTER(ct.c_uint8)),
-	("ca_cert_len", ct.c_ulong),
-	("public_cert_len", ct.c_ulong),
-	("private_key_len", ct.c_ulong),
+	("ca_cert_len", ct.c_size_t),
+	("public_cert_len", ct.c_size_t),
+	("private_key_len", ct.c_size_t),
 	("private_key_type", coap_asn1_privatekey_type_t.get_ctype()),
 	]
 
 coap_pki_key_pkcs11_t._fields_ = [
-	("ca", ct.POINTER(ct.c_int8)),
-	("public_cert", ct.POINTER(ct.c_int8)),
-	("private_key", ct.POINTER(ct.c_int8)),
-	("user_pin", ct.POINTER(ct.c_int8)),
+	("ca", ct.c_char_p),
+	("public_cert", ct.c_char_p),
+	("private_key", ct.c_char_p),
+	("user_pin", ct.c_char_p),
 	]
 
 class coap_pki_define_t(ctypes_enum_gen):
@@ -665,14 +665,14 @@ coap_pki_key_define_t._fields_ = [
 	("ca", coap_const_char_ptr_t),
 	("public_cert", coap_const_char_ptr_t),
 	("private_key", coap_const_char_ptr_t),
-	("ca_len", ct.c_ulong),
-	("public_cert_len", ct.c_ulong),
-	("private_key_len", ct.c_ulong),
+	("ca_len", ct.c_size_t),
+	("public_cert_len", ct.c_size_t),
+	("private_key_len", ct.c_size_t),
 	("ca_def", coap_pki_define_t.get_ctype()),
 	("public_cert_def", coap_pki_define_t.get_ctype()),
 	("private_key_def", coap_pki_define_t.get_ctype()),
 	("private_key_type", coap_asn1_privatekey_type_t.get_ctype()),
-	("user_pin", ct.POINTER(ct.c_int8)),
+	("user_pin", ct.c_char_p),
 	]
 
 coap_dtls_key_t_key._fields_ = [
@@ -688,7 +688,7 @@ coap_dtls_key_t._fields_ = [
 	("key", coap_dtls_key_t_key),
 	]
 
-coap_dtls_pki_sni_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(ct.c_int8), ct.py_object)
+coap_dtls_pki_sni_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.c_char_p, ct.py_object)
 coap_dtls_pki_t._fields_ = [
 	("version", ct.c_uint8),
 	("verify_peer_cert", ct.c_uint8),
@@ -710,7 +710,7 @@ coap_dtls_pki_t._fields_ = [
 	("validate_sni_call_back", coap_dtls_pki_sni_callback_t),
 	("sni_call_back_arg", ct.py_object),
 	("additional_tls_setup_call_back", coap_dtls_security_setup_t),
-	("client_sni", ct.POINTER(ct.c_int8)),
+	("client_sni", ct.c_char_p),
 	("pki_key", coap_dtls_key_t),
 	]
 
@@ -727,7 +727,7 @@ coap_dtls_cpsk_t._fields_ = [
 	("reserved", ct.c_uint8 * 5),
 	("validate_ih_call_back", coap_dtls_ih_callback_t),
 	("ih_call_back_arg", ct.py_object),
-	("client_sni", ct.POINTER(ct.c_int8)),
+	("client_sni", ct.c_char_p),
 	("psk_info", coap_dtls_cpsk_info_t),
 	]
 
@@ -737,7 +737,7 @@ coap_dtls_spsk_info_t._fields_ = [
 	]
 
 coap_dtls_id_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(coap_bin_const_t), ct.POINTER(coap_session_t), ct.py_object)
-coap_dtls_psk_sni_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.POINTER(ct.c_int8), ct.POINTER(coap_session_t), ct.py_object)
+coap_dtls_psk_sni_callback_t = ct.CFUNCTYPE(ct.c_void_p, ct.c_char_p, ct.POINTER(coap_session_t), ct.py_object)
 coap_dtls_spsk_t._fields_ = [
 	("version", ct.c_uint8),
 	("ec_jpake", ct.c_uint8),
@@ -808,7 +808,7 @@ class coap_log_t(ctypes_enum_gen):
 	COAP_LOG_OSCORE = 8
 	COAP_LOG_DTLS_BASE = 9
 
-coap_log_handler_t = ct.CFUNCTYPE(None, coap_log_t.get_ctype(), ct.POINTER(ct.c_int8))
+coap_log_handler_t = ct.CFUNCTYPE(None, coap_log_t.get_ctype(), ct.c_char_p)
 class coap_response_t(ctypes_enum_gen):
 	COAP_RESPONSE_FAIL = 0
 	COAP_RESPONSE_OK = 1
@@ -861,8 +861,8 @@ coap_proxy_server_t._fields_ = [
 
 coap_proxy_server_list_t._fields_ = [
 	("entry", ct.POINTER(coap_proxy_server_t)),
-	("entry_count", ct.c_ulong),
-	("next_entry", ct.c_ulong),
+	("entry_count", ct.c_size_t),
+	("next_entry", ct.c_size_t),
 	("type", coap_proxy_t.get_ctype()),
 	("track_client_session", ct.c_int),
 	("idle_timeout_secs", ct.c_uint),
@@ -921,17 +921,17 @@ library_functions.append({
 	"name": "coap_opt_parse",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "opt"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(coap_option_t), "result"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_opt_size",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "opt"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_option_filter_clear",
@@ -993,30 +993,30 @@ library_functions.append({
 	"name": "coap_opt_setheader",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "opt"),
-		(ct.c_ulong, "maxlen"),
+		(ct.c_size_t, "maxlen"),
 		(ct.c_ushort, "delta"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_opt_encode_size",
 	"args": [
 		(ct.c_ushort, "delta"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_opt_encode",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "opt"),
-		(ct.c_ulong, "n"),
+		(ct.c_size_t, "n"),
 		(ct.c_ushort, "delta"),
 		(ct.POINTER(ct.c_uint8), "val"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_opt_length",
@@ -1036,7 +1036,7 @@ library_functions.append({
 	"name": "coap_new_optlist",
 	"args": [
 		(ct.c_ushort, "number"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		],
 	"restype": ct.POINTER(coap_optlist_t),
@@ -1067,7 +1067,7 @@ library_functions.append({
 library_functions.append({
 	"name": "coap_new_string",
 	"args": [
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.POINTER(coap_string_t),
 	})
@@ -1082,7 +1082,7 @@ library_functions.append({
 	"name": "coap_new_str_const",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "data"),
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.POINTER(coap_str_const_t),
 	})
@@ -1096,7 +1096,7 @@ library_functions.append({
 library_functions.append({
 	"name": "coap_new_binary",
 	"args": [
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.POINTER(coap_binary_t),
 	})
@@ -1111,7 +1111,7 @@ library_functions.append({
 	"name": "coap_resize_binary",
 	"args": [
 		(ct.POINTER(coap_binary_t), "binary"),
-		(ct.c_ulong, "new_size"),
+		(ct.c_size_t, "new_size"),
 		],
 	"restype": ct.POINTER(coap_binary_t),
 	})
@@ -1119,7 +1119,7 @@ library_functions.append({
 	"name": "coap_new_bin_const",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "data"),
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.POINTER(coap_bin_const_t),
 	})
@@ -1133,7 +1133,7 @@ library_functions.append({
 library_functions.append({
 	"name": "coap_make_str_const",
 	"args": [
-		(ct.POINTER(ct.c_int8), "string"),
+		(ct.c_char_p, "string"),
 		],
 	"restype": ct.POINTER(coap_str_const_t),
 	})
@@ -1170,7 +1170,7 @@ library_functions.append({
 	"name": "coap_split_uri",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "str_var"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(coap_uri_t), "uri"),
 		],
 	"restype": ct.c_int,
@@ -1179,7 +1179,7 @@ library_functions.append({
 	"name": "coap_split_proxy_uri",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "str_var"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(coap_uri_t), "uri"),
 		],
 	"restype": ct.c_int,
@@ -1192,7 +1192,7 @@ library_functions.append({
 		(ct.POINTER(ct.POINTER(coap_optlist_t)), "optlist_chain"),
 		(ct.c_int, "create_port_host_opt"),
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.c_ulong, "buflen"),
+		(ct.c_size_t, "buflen"),
 		],
 	"restype": ct.c_int,
 	})
@@ -1210,9 +1210,9 @@ library_functions.append({
 	"name": "coap_split_path",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "path"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.POINTER(ct.c_ulong), "buflen"),
+		(ct.POINTER(ct.c_size_t), "buflen"),
 		],
 	"restype": ct.c_int,
 	})
@@ -1220,7 +1220,7 @@ library_functions.append({
 	"name": "coap_path_into_optlist",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "path"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.c_ushort, "optnum"),
 		(ct.POINTER(ct.POINTER(coap_optlist_t)), "optlist_chain"),
 		],
@@ -1230,9 +1230,9 @@ library_functions.append({
 	"name": "coap_split_query",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "query"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.POINTER(ct.c_ulong), "buflen"),
+		(ct.POINTER(ct.c_size_t), "buflen"),
 		],
 	"restype": ct.c_int,
 	})
@@ -1240,7 +1240,7 @@ library_functions.append({
 	"name": "coap_query_into_optlist",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "query"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.c_ushort, "optnum"),
 		(ct.POINTER(ct.POINTER(coap_optlist_t)), "optlist_chain"),
 		],
@@ -1265,7 +1265,7 @@ library_functions.append({
 	"args": [
 		(ct.c_uint8, "code"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_pdu_init",
@@ -1273,7 +1273,7 @@ library_functions.append({
 		(coap_pdu_type_t.get_ctype(), "type"),
 		(coap_pdu_code_t.get_ctype(), "code"),
 		(ct.c_int, "mid"),
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.POINTER(coap_pdu_t),
 	})
@@ -1298,7 +1298,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_pdu_t), "old_pdu"),
 		(ct.POINTER(coap_session_t), "session"),
-		(ct.c_ulong, "token_length"),
+		(ct.c_size_t, "token_length"),
 		(ct.POINTER(ct.c_uint8), "token"),
 		(ct.POINTER(coap_opt_filter_t), "drop_options"),
 		],
@@ -1309,7 +1309,7 @@ library_functions.append({
 	"args": [
 		(coap_proto_t.get_ctype(), "proto"),
 		(ct.POINTER(ct.c_uint8), "data"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(coap_pdu_t), "pdu"),
 		],
 	"restype": ct.c_int,
@@ -1318,7 +1318,7 @@ library_functions.append({
 	"name": "coap_add_token",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		],
 	"restype": ct.c_int,
@@ -1328,16 +1328,16 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
 		(ct.c_ushort, "number"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_add_data",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		],
 	"restype": ct.c_int,
@@ -1346,7 +1346,7 @@ library_functions.append({
 	"name": "coap_add_data_after",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		],
 	"restype": ct.POINTER(ct.c_uint8),
 	})
@@ -1354,7 +1354,7 @@ library_functions.append({
 	"name": "coap_get_data",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.POINTER(ct.c_ulong), "len"),
+		(ct.POINTER(ct.c_size_t), "len"),
 		(ct.POINTER(ct.POINTER(ct.c_uint8)), "data"),
 		],
 	"restype": ct.c_int,
@@ -1363,10 +1363,10 @@ library_functions.append({
 	"name": "coap_get_data_large",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.POINTER(ct.c_ulong), "len"),
+		(ct.POINTER(ct.c_size_t), "len"),
 		(ct.POINTER(ct.POINTER(ct.c_uint8)), "data"),
-		(ct.POINTER(ct.c_ulong), "offset"),
-		(ct.POINTER(ct.c_ulong), "total"),
+		(ct.POINTER(ct.c_size_t), "offset"),
+		(ct.POINTER(ct.c_size_t), "total"),
 		],
 	"restype": ct.c_int,
 	})
@@ -1494,7 +1494,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_address_t), "addr"),
 		(ct.POINTER(ct.c_uint8), "host"),
-		(ct.c_ulong, "host_len"),
+		(ct.c_size_t, "host_len"),
 		],
 	"restype": ct.c_int,
 	})
@@ -1529,7 +1529,7 @@ library_functions.append({
 	})
 library_functions.append({
 	"name": "coap_socket_strerror",
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_clock_init",
@@ -1722,7 +1722,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_new_client_session",
@@ -1741,7 +1741,7 @@ library_functions.append({
 		(ct.POINTER(coap_address_t), "local_if"),
 		(ct.POINTER(coap_address_t), "server"),
 		(coap_proto_t.get_ctype(), "proto"),
-		(ct.POINTER(ct.c_int8), "identity"),
+		(ct.c_char_p, "identity"),
 		(ct.POINTER(ct.c_uint8), "key"),
 		(ct.c_uint, "key_len"),
 		],
@@ -1794,7 +1794,7 @@ library_functions.append({
 	"name": "coap_session_init_token",
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "token"),
 		],
 	"restype": None,
@@ -1803,7 +1803,7 @@ library_functions.append({
 	"name": "coap_session_new_token",
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
-		(ct.POINTER(ct.c_ulong), "length"),
+		(ct.POINTER(ct.c_size_t), "length"),
 		(ct.POINTER(ct.c_uint8), "token"),
 		],
 	"restype": None,
@@ -1813,7 +1813,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_new_endpoint",
@@ -1853,7 +1853,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_endpoint_t), "endpoint"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_session_set_ack_timeout",
@@ -2046,7 +2046,7 @@ library_functions.append({
 	"args": [
 		(coap_log_t.get_ctype(), "level"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_set_log_handler",
@@ -2057,21 +2057,21 @@ library_functions.append({
 	})
 library_functions.append({
 	"name": "coap_package_name",
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_package_version",
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_package_build",
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_log_impl",
 	"args": [
 		(coap_log_t.get_ctype(), "level"),
-		(ct.POINTER(ct.c_int8), "format"),
+		(ct.c_char_p, "format"),
 		],
 	"restype": None,
 	})
@@ -2107,41 +2107,41 @@ library_functions.append({
 library_functions.append({
 	"name": "coap_string_tls_version",
 	"args": [
-		(ct.POINTER(ct.c_int8), "buffer"),
-		(ct.c_ulong, "bufsize"),
+		(ct.c_char_p, "buffer"),
+		(ct.c_size_t, "bufsize"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_string_tls_support",
 	"args": [
-		(ct.POINTER(ct.c_int8), "buffer"),
-		(ct.c_ulong, "bufsize"),
+		(ct.c_char_p, "buffer"),
+		(ct.c_size_t, "bufsize"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_print_addr",
 	"args": [
 		(ct.POINTER(coap_address_t), "address"),
 		(ct.POINTER(ct.c_uint8), "buffer"),
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
-	"restype": ct.c_ulong,
+	"restype": ct.c_size_t,
 	})
 library_functions.append({
 	"name": "coap_print_ip_addr",
 	"args": [
 		(ct.POINTER(coap_address_t), "address"),
-		(ct.POINTER(ct.c_int8), "buffer"),
-		(ct.c_ulong, "size"),
+		(ct.c_char_p, "buffer"),
+		(ct.c_size_t, "size"),
 		],
-	"restype": ct.POINTER(ct.c_int8),
+	"restype": ct.c_char_p,
 	})
 library_functions.append({
 	"name": "coap_debug_set_packet_loss",
 	"args": [
-		(ct.POINTER(ct.c_int8), "loss_level"),
+		(ct.c_char_p, "loss_level"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2196,9 +2196,9 @@ library_functions.append({
 	"name": "coap_context_set_psk",
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
-		(ct.POINTER(ct.c_int8), "hint"),
+		(ct.c_char_p, "hint"),
 		(ct.POINTER(ct.c_uint8), "key"),
-		(ct.c_ulong, "key_len"),
+		(ct.c_size_t, "key_len"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2222,8 +2222,8 @@ library_functions.append({
 	"name": "coap_context_set_pki_root_cas",
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
-		(ct.POINTER(ct.c_int8), "ca_file"),
-		(ct.POINTER(ct.c_int8), "ca_dir"),
+		(ct.c_char_p, "ca_file"),
+		(ct.c_char_p, "ca_dir"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2247,7 +2247,7 @@ library_functions.append({
 	"name": "coap_context_set_max_token_size",
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
-		(ct.c_ulong, "max_token_size"),
+		(ct.c_size_t, "max_token_size"),
 		],
 	"restype": None,
 	})
@@ -2463,8 +2463,8 @@ library_functions.append({
 	"name": "coap_join_mcast_group_intf",
 	"args": [
 		(ct.POINTER(coap_context_t), "ctx"),
-		(ct.POINTER(ct.c_int8), "groupname"),
-		(ct.POINTER(ct.c_int8), "ifname"),
+		(ct.c_char_p, "groupname"),
+		(ct.c_char_p, "ifname"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2472,7 +2472,7 @@ library_functions.append({
 	"name": "coap_mcast_set_hops",
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
-		(ct.c_ulong, "hops"),
+		(ct.c_size_t, "hops"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2557,7 +2557,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_context_t), "ctx"),
 		(ct.POINTER(epoll_event), "events"),
-		(ct.c_ulong, "nevents"),
+		(ct.c_size_t, "nevents"),
 		],
 	"restype": None,
 	})
@@ -2634,7 +2634,7 @@ library_functions.append({
 	"name": "coap_decode_var_bytes",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		],
 	"restype": ct.c_uint,
 	})
@@ -2642,7 +2642,7 @@ library_functions.append({
 	"name": "coap_decode_var_bytes8",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		],
 	"restype": ct.c_ulong,
 	})
@@ -2650,7 +2650,7 @@ library_functions.append({
 	"name": "coap_encode_var_safe",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.c_uint, "value"),
 		],
 	"restype": ct.c_uint,
@@ -2659,7 +2659,7 @@ library_functions.append({
 	"name": "coap_encode_var_safe8",
 	"args": [
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.c_ulong, "value"),
 		],
 	"restype": ct.c_uint,
@@ -2696,7 +2696,7 @@ library_functions.append({
 		(ct.POINTER(coap_block_t), "block"),
 		(ct.c_ushort, "number"),
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "data_length"),
+		(ct.c_size_t, "data_length"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2707,7 +2707,7 @@ library_functions.append({
 		(ct.POINTER(coap_block_b_t), "block"),
 		(ct.c_ushort, "number"),
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "data_length"),
+		(ct.c_size_t, "data_length"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2715,7 +2715,7 @@ library_functions.append({
 	"name": "coap_add_block",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		(ct.c_uint, "block_num"),
 		(ct.c_uint8, "block_szx"),
@@ -2726,7 +2726,7 @@ library_functions.append({
 	"name": "coap_add_block_b_data",
 	"args": [
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		(ct.POINTER(coap_block_b_t), "block"),
 		],
@@ -2736,10 +2736,10 @@ library_functions.append({
 	"name": "coap_block_build_body",
 	"args": [
 		(ct.POINTER(coap_binary_t), "body_data"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "data"),
-		(ct.c_ulong, "offset"),
-		(ct.c_ulong, "total"),
+		(ct.c_size_t, "offset"),
+		(ct.c_size_t, "total"),
 		],
 	"restype": ct.POINTER(coap_binary_t),
 	})
@@ -2750,7 +2750,7 @@ library_functions.append({
 		(ct.POINTER(coap_pdu_t), "response"),
 		(ct.c_ushort, "media_type"),
 		(ct.c_int, "maxage"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		],
 	"restype": None,
@@ -2760,7 +2760,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
 		(ct.POINTER(coap_pdu_t), "pdu"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		(coap_release_large_data_t, "release_func"),
 		(ct.py_object, "app_ptr"),
@@ -2778,7 +2778,7 @@ library_functions.append({
 		(ct.c_ushort, "media_type"),
 		(ct.c_int, "maxage"),
 		(ct.c_ulong, "etag"),
-		(ct.c_ulong, "length"),
+		(ct.c_size_t, "length"),
 		(ct.POINTER(ct.c_uint8), "data"),
 		(coap_release_large_data_t, "release_func"),
 		(ct.py_object, "app_ptr"),
@@ -2797,7 +2797,7 @@ library_functions.append({
 	"name": "coap_context_set_max_block_size",
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
-		(ct.c_ulong, "max_block_size"),
+		(ct.c_size_t, "max_block_size"),
 		],
 	"restype": ct.c_int,
 	})
@@ -2817,7 +2817,7 @@ library_functions.append({
 		(ct.POINTER(coap_pdu_t), "pdu"),
 		(coap_cache_session_based_t.get_ctype(), "session_based"),
 		(ct.POINTER(ct.c_ushort), "ignore_options"),
-		(ct.c_ulong, "ignore_count"),
+		(ct.c_size_t, "ignore_count"),
 		],
 	"restype": ct.POINTER(coap_cache_key_t),
 	})
@@ -2833,7 +2833,7 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
 		(ct.POINTER(ct.c_ushort), "options"),
-		(ct.c_ulong, "count"),
+		(ct.c_size_t, "count"),
 		],
 	"restype": ct.c_int,
 	})
@@ -3008,7 +3008,7 @@ library_functions.append({
 	"name": "coap_malloc_type",
 	"args": [
 		(coap_memory_tag_t.get_ctype(), "type"),
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.py_object,
 	})
@@ -3017,7 +3017,7 @@ library_functions.append({
 	"args": [
 		(coap_memory_tag_t.get_ctype(), "type"),
 		(ct.py_object, "p"),
-		(ct.c_ulong, "size"),
+		(ct.c_size_t, "size"),
 		],
 	"restype": ct.py_object,
 	})
@@ -3054,7 +3054,7 @@ library_functions.append({
 	"name": "coap_prng",
 	"args": [
 		(ct.py_object, "buf"),
-		(ct.c_ulong, "len"),
+		(ct.c_size_t, "len"),
 		],
 	"restype": ct.c_int,
 	})
@@ -3085,8 +3085,8 @@ library_functions.append({
 	"name": "coap_resource_proxy_uri_init",
 	"args": [
 		(coap_method_handler_t, "handler"),
-		(ct.c_ulong, "host_name_count"),
-		(ct.POINTER(ct.POINTER(ct.c_int8)), "host_name_list"),
+		(ct.c_size_t, "host_name_count"),
+		(ct.POINTER(ct.c_char_p), "host_name_list"),
 		],
 	"restype": ct.POINTER(coap_resource_t),
 	})
@@ -3094,8 +3094,8 @@ library_functions.append({
 	"name": "coap_resource_proxy_uri_init2",
 	"args": [
 		(coap_method_handler_t, "handler"),
-		(ct.c_ulong, "host_name_count"),
-		(ct.POINTER(ct.POINTER(ct.c_int8)), "host_name_list"),
+		(ct.c_size_t, "host_name_count"),
+		(ct.POINTER(ct.c_char_p), "host_name_list"),
 		(ct.c_int, "flags"),
 		],
 	"restype": ct.POINTER(coap_resource_t),
@@ -3218,8 +3218,8 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_resource_t), "resource"),
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.POINTER(ct.c_ulong), "len"),
-		(ct.POINTER(ct.c_ulong), "offset"),
+		(ct.POINTER(ct.c_size_t), "len"),
+		(ct.POINTER(ct.c_size_t), "offset"),
 		],
 	"restype": ct.c_uint,
 	})
@@ -3228,8 +3228,8 @@ library_functions.append({
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
 		(ct.POINTER(ct.c_uint8), "buf"),
-		(ct.POINTER(ct.c_ulong), "buflen"),
-		(ct.c_ulong, "offset"),
+		(ct.POINTER(ct.c_size_t), "buflen"),
+		(ct.c_size_t, "offset"),
 		(ct.POINTER(coap_string_t), "query_filter"),
 		],
 	"restype": ct.c_uint,
@@ -3295,9 +3295,9 @@ library_functions.append({
 	"name": "coap_persist_startup",
 	"args": [
 		(ct.POINTER(coap_context_t), "context"),
-		(ct.POINTER(ct.c_int8), "dyn_resource_save_file"),
-		(ct.POINTER(ct.c_int8), "observe_save_file"),
-		(ct.POINTER(ct.c_int8), "obs_cnt_save_file"),
+		(ct.c_char_p, "dyn_resource_save_file"),
+		(ct.c_char_p, "observe_save_file"),
+		(ct.c_char_p, "obs_cnt_save_file"),
 		(ct.c_uint, "save_freq"),
 		],
 	"restype": ct.c_int,
