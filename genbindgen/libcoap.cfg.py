@@ -8,6 +8,7 @@
 		
 		"fd_set", "epoll_event",
 		],
+	"ignore_structs": ["coap_string_t", "coap_str_const_t", "coap_binary_t", "coap_bin_const_t"],
 	"include": { 2: ["sockaddr", "local"], },
 	"functions": {
 		"coap_split_uri": {

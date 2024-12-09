@@ -134,6 +134,41 @@ def bytes2uint8p(b, cast=ct.POINTER(ct.c_ubyte)):
 		return None
 	return ct.cast(ct.create_string_buffer(b), cast)
 
+def c_uint8_p_to_str(uint8p, length):
+	b = ct.string_at(uint8p, length)
+	try:
+		return b.decode()
+	except:
+		return b
+
+class coap_string_t(LStructure):
+	_fields_ = [("length", ct.c_size_t), ("s", ct.POINTER(ct.c_uint8))]
+	
+	def __init__(self, value=None):
+		super().__init__()
+		
+		if value:
+			if isinstance(value, str):
+				b = value.encode()
+			else:
+				b = value
+			
+			self.s = bytes2uint8p(b)
+			self.length = ct.c_size_t(len(b))
+	
+	def __str__(self):
+		return str(c_uint8_p_to_str(self.s, self.length))
+
+class coap_str_const_t(coap_string_t):
+	pass
+
+class coap_binary_t(coap_string_t):
+	def __str__(self):
+		return str([ "0x%02x" % (self.s[i]) for i in range(self.length)])
+
+class coap_bin_const_t(coap_binary_t):
+	pass
+
 
 class coap_option_t(LStructure):
 	pass
@@ -145,18 +180,6 @@ class coap_opt_iterator_t(LStructure):
 	pass
 
 class coap_optlist_t(LStructure):
-	pass
-
-class coap_string_t(LStructure):
-	pass
-
-class coap_str_const_t(LStructure):
-	pass
-
-class coap_binary_t(LStructure):
-	pass
-
-class coap_bin_const_t(LStructure):
 	pass
 
 class coap_const_char_ptr_t(ct.Union):
@@ -397,26 +420,6 @@ coap_optlist_t._fields_ = [
 	("number", ct.c_ushort),
 	("length", ct.c_ulong),
 	("data", ct.POINTER(ct.c_uint8)),
-	]
-
-coap_string_t._fields_ = [
-	("length", ct.c_ulong),
-	("s", ct.POINTER(ct.c_uint8)),
-	]
-
-coap_str_const_t._fields_ = [
-	("length", ct.c_ulong),
-	("s", ct.POINTER(ct.c_uint8)),
-	]
-
-coap_binary_t._fields_ = [
-	("length", ct.c_ulong),
-	("s", ct.POINTER(ct.c_uint8)),
-	]
-
-coap_bin_const_t._fields_ = [
-	("length", ct.c_ulong),
-	("s", ct.POINTER(ct.c_uint8)),
 	]
 
 coap_const_char_ptr_t._fields_ = [
