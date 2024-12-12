@@ -2562,6 +2562,28 @@ library_functions.append({
 	"restype": None,
 	})
 library_functions.append({
+	"name": "coap_socket_get_fd",
+	"args": [
+		(ct.POINTER(coap_socket_t), "socket"),
+		],
+	"restype": ct.c_int,
+	})
+library_functions.append({
+	"name": "coap_socket_get_flags",
+	"args": [
+		(ct.POINTER(coap_socket_t), "socket"),
+		],
+	"restype": ct.c_ushort,
+	})
+library_functions.append({
+	"name": "coap_socket_set_flags",
+	"args": [
+		(ct.POINTER(coap_socket_t), "socket"),
+		(ct.c_ushort, "flags"),
+		],
+	"restype": None,
+	})
+library_functions.append({
 	"name": "coap_register_async",
 	"args": [
 		(ct.POINTER(coap_session_t), "session"),
