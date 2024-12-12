@@ -3518,7 +3518,7 @@ def ct_call(fdict, *nargs, **kwargs):
 						break
 				i += 1
 			if not found:
-				raise Exception(f"error, argument \"{key}\" for \"{fdict["name"]}\" not found")
+				raise Exception("error, argument \""+key+"\" for \""+fdict["name"]+"\" not found")
 	
 	res = ct_fct(*newargs)
 	if fdict.get("restype", ct.c_int) == ct.py_object:
