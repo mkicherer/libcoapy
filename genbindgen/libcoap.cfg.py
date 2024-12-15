@@ -9,39 +9,77 @@
 		"fd_set", "epoll_event",
 		],
 	"ignore_structs": ["coap_string_t", "coap_str_const_t", "coap_binary_t", "coap_bin_const_t"],
-	"include": { 2: ["sockaddr", "local"], },
+	"include": { 2: ["sockaddr", "local"], 7: ["07-default-retval"], },
 	"functions": {
 		"coap_split_uri": {
-			3: ["in", "out"],
+			"arg_dirs": {
+				3: ["in", "out"],
+				},
 			},
 		"coap_resolve_address_info": {
-			1: ["in"],
-			2: ["in"],
-			3: ["in"],
-			4: ["in"],
-			5: ["in"],
-			6: ["in"],
-			7: ["in"],
-			8: ["in"],
+			"arg_dirs": {
+				1: ["in"],
+				2: ["in"],
+				3: ["in"],
+				4: ["in"],
+				5: ["in"],
+				6: ["in"],
+				7: ["in"],
+				8: ["in"],
+				},
 			},
 		"coap_new_context": {
-			1: ["in"],
+			"arg_dirs": {
+				1: ["in"],
+				},
 			},
 		"coap_print_addr": {
-			"address": ["in"],
+			"arg_dirs": {
+				"address": ["in"],
+				},
 			},
 		"coap_split_uri": {
-			"uri": ["in","out"],
+			"arg_dirs": {
+				"uri": ["in","out"],
+				},
 			},
 		"coap_uri_into_optlist": {
-			"uri": ["in"],
-			"optlist_chain": ["out"],
+			"arg_dirs": {
+				"uri": ["in"],
+				"optlist_chain": ["out"],
+				},
 			},
 		"coap_get_data_large": {
-			"len": ["in", "out"],
-			"data": ["out"],
-			"offset": ["in", "out"],
-			"total": ["in", "out"],
+			"arg_dirs": {
+				"len": ["in", "out"],
+				"data": ["out"],
+				"offset": ["in", "out"],
+				"total": ["in", "out"],
+				},
+			},
+		"coap_split_uri": {
+			"expect": 0,
+			},
+		"coap_io_process": {
+			"res_error": -1,
+			},
+		"coap_context_get_coap_fd": {
+			"res_error": -1,
+			},
+		"coap_is_af_unix": {
+			"llapi_check": False,
+			},
+		"coap_is_bcast": {
+			"llapi_check": False,
+			},
+		"coap_is_mcast": {
+			"llapi_check": False,
+			},
+		"coap_pdu_get_code": {
+			"llapi_check": False,
+			},
+		"coap_pdu_get_type": {
+			"llapi_check": False,
 			},
 		}
 }
