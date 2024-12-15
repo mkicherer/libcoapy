@@ -1174,6 +1174,7 @@ library_functions.append({
 		(ct.POINTER(coap_uri_t), "uri"),
 		],
 	"restype": ct.c_int,
+	"expect": 0,
 	})
 library_functions.append({
 	"name": "coap_split_proxy_uri",
@@ -1376,6 +1377,7 @@ library_functions.append({
 		(ct.POINTER(coap_pdu_t), "pdu"),
 		],
 	"restype": coap_pdu_code_t.get_ctype(),
+	"llapi_check": False,
 	})
 library_functions.append({
 	"name": "coap_pdu_set_code",
@@ -1391,6 +1393,7 @@ library_functions.append({
 		(ct.POINTER(coap_pdu_t), "pdu"),
 		],
 	"restype": coap_pdu_type_t.get_ctype(),
+	"llapi_check": False,
 	})
 library_functions.append({
 	"name": "coap_pdu_set_type",
@@ -1512,6 +1515,7 @@ library_functions.append({
 		(ct.POINTER(coap_address_t), "a"),
 		],
 	"restype": ct.c_int,
+	"llapi_check": False,
 	})
 library_functions.append({
 	"name": "coap_is_bcast",
@@ -1519,6 +1523,7 @@ library_functions.append({
 		(ct.POINTER(coap_address_t), "a"),
 		],
 	"restype": ct.c_int,
+	"llapi_check": False,
 	})
 library_functions.append({
 	"name": "coap_is_af_unix",
@@ -1526,6 +1531,7 @@ library_functions.append({
 		(ct.POINTER(coap_address_t), "a"),
 		],
 	"restype": ct.c_int,
+	"llapi_check": False,
 	})
 library_functions.append({
 	"name": "coap_socket_strerror",
@@ -2257,6 +2263,7 @@ library_functions.append({
 		(ct.POINTER(coap_context_t), "context"),
 		],
 	"restype": ct.c_int,
+	"res_error": -1,
 	})
 library_functions.append({
 	"name": "coap_context_set_max_idle_sessions",
@@ -2505,6 +2512,7 @@ library_functions.append({
 		(ct.c_uint, "timeout_ms"),
 		],
 	"restype": ct.c_int,
+	"res_error": -1,
 	})
 library_functions.append({
 	"name": "coap_io_process_with_fds",
@@ -2567,6 +2575,20 @@ library_functions.append({
 		(ct.POINTER(coap_socket_t), "socket"),
 		],
 	"restype": ct.c_int,
+	})
+library_functions.append({
+	"name": "coap_io_get_fds",
+	"args": [
+		(ct.POINTER(coap_context_t), "context"),
+		(ct.POINTER(ct.c_int), "read_fds"),
+		(ct.POINTER(ct.c_uint), "have_read_fds"),
+		(ct.c_uint, "max_read_fds"),
+		(ct.POINTER(ct.c_int), "write_fds"),
+		(ct.POINTER(ct.c_uint), "have_write_fds"),
+		(ct.c_uint, "max_write_fds"),
+		(ct.POINTER(ct.c_uint), "rem_timeout_ms"),
+		],
+	"restype": ct.c_uint,
 	})
 library_functions.append({
 	"name": "coap_socket_get_flags",
@@ -3444,6 +3466,19 @@ library_functions.append({
 		],
 	"restype": ct.c_int,
 	})
+# from 07-default-retval.py
+
+
+for fct in library_functions:
+	if (
+		"restype" in fct
+		and fct["restype"] == ct.c_int
+		and "res_error" not in fct
+		and "expect" not in fct
+		and fct.get("llapi_check", True) is True
+		):
+		fct["res_error"] = 0
+
 
 # from 8-footer.py
 
@@ -3520,6 +3555,10 @@ def ct_call(fdict, *nargs, **kwargs):
 			if not found:
 				raise Exception("error, argument \""+key+"\" for \""+fdict["name"]+"\" not found")
 	
+	if verbosity > 1:
+		print(fdict["name"], newargs, end=" ")
+		sys.stdout.flush()
+	
 	res = ct_fct(*newargs)
 	if fdict.get("restype", ct.c_int) == ct.py_object:
 		if res:
@@ -3528,7 +3567,7 @@ def ct_call(fdict, *nargs, **kwargs):
 			res = None
 	
 	if verbosity > 1:
-		print(fdict["name"], newargs, "=", res)
+		print("=", res)
 	
 	if kwargs.get("llapi_check", True):
 		if fdict.get("expect", False):
@@ -3537,7 +3576,7 @@ def ct_call(fdict, *nargs, **kwargs):
 					raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+os.strerror(-res)+" ("+str(-res)+")")
 				else:
 					raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+str(res)+" (!= "+str(fdict["expect"])+")")
-		elif fdict.get("res_error", False):
+		elif "res_error" in fdict:
 			if res == fdict["res_error"]:
 				raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+str(res)+" (== "+str(fdict["res_error"])+")")
 		elif fdict.get("restype", ct.c_int) in [ct.c_long, ct.c_int] and res < 0:
@@ -3588,7 +3627,7 @@ resolve_immediately = False
 for fdict in library_functions:
 	if getattr(libcoap, fdict["name"], None) is None:
 		if verbosity > 0:
-			print(f["name"], "not found in library")
+			print(fdict["name"], "not found in library")
 		continue
 	
 	if resolve_immediately:
