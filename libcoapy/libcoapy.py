@@ -703,6 +703,7 @@ class CoapClientSession(CoapSession):
 		observer.tx_pdu = tx_pdu
 		
 		if kwargs.get("observe", False):
+			observer.observing = True
 			return observer
 		else:
 			return await observer.__anext__()
@@ -715,6 +716,7 @@ class CoapObserver():
 		self.ev = Event()
 		self.rx_msgs = []
 		self._stop = False
+		self.observing = False
 	
 	def __del__(self):
 		self.stop()
@@ -753,7 +755,8 @@ class CoapObserver():
 		if self._stop:
 			return
 		
-		self.tx_pdu.cancelObservation()
+		if self.observing:
+			self.tx_pdu.cancelObservation()
 		
 		self._stop = True
 		self.ev.set()
