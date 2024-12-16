@@ -971,6 +971,7 @@ class CoapContext():
 	def io_process(self, timeout_ms=COAP_IO_WAIT):
 		if timeout_ms < 0 or timeout_ms > COAP_IO_NO_WAIT:
 			raise ValueError
+		
 		res = coap_io_process(self.lcoap_ctx, timeout_ms)
 		if res < 0:
 			raise CoapUnexpectedError("coap_io_process()")
@@ -1183,7 +1184,7 @@ class CoapContext():
 					continue
 				
 				interfaces[intf.name] = intf
-			
+		
 		return interfaces
 	
 	@staticmethod
