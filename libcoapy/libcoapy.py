@@ -1192,7 +1192,7 @@ class CoapContext():
 		
 		ipa = ipaddress.ip_address(ip)
 		if ipa.is_link_local:
-			if not sys.platform.startswith('win'):
+			if not sys.platform.startswith('win') or 'WINEPREFIX' in os.environ:
 				result = ip+"%"+intf.name
 			else:
 				result = ip+"%"+str(intf.index)
