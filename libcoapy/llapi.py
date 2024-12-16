@@ -3582,7 +3582,7 @@ def ct_call(fdict, *nargs, **kwargs):
 		elif fdict.get("restype", ct.c_int) in [ct.c_long, ct.c_int] and res < 0:
 			raise OSError(res, fdict["name"]+str(newargs)+" failed with: "+os.strerror(-res)+" ("+str(-res)+")")
 		elif isinstance(res, ct._Pointer) and not res:
-			raise NullPointer(fdict["name"]+str(newargs)+" returned NULL pointer")
+			raise NullPointer(fdict["name"]+str(newargs)+" returned NULL pointer", "(errno "+str(errno())+")" if "errno" in globals() else "")
 	
 	return res
 
@@ -3619,8 +3619,44 @@ for libname in libnames:
 if libcoap is None:
 	raise Exception("could not find libcoap library")
 
-#libc = ct.CDLL('libc.so.6')
-#libc.free.args = [ct.c_void_p]
+try:
+	libc = None
+	if os.name == "posix":
+		libc = ct.CDLL('libc.so.6')
+		
+		libc.__errno_location.restype = ct.POINTER(ct.c_int)
+		
+		def errno(value=None):
+			if value is None:
+				return libc.__errno_location()[0]
+			else:
+				libc.__errno_location()[0] = value
+	elif os.name == "nt":
+		libc = ct.cdll.msvcrt
+		
+		if not libc:
+			# TODO testing
+			import ctypes.util as ct_util
+			libname = ct_util.find_msvcrt()
+			libc = ct.WinDLL(libname)
+		
+		libc._errno.restype = ct.POINTER(ct.c_int)
+		
+		def errno(value=None):
+			if value is None:
+				return libc._errno()[0]
+			else:
+				libc._set_errno(value)
+	else:
+		if verbosity > 0:
+			print("unexpected os", os.name, file=sys.stderr)
+	
+	if libc:
+		libc.free.args = [ct.c_void_p]
+except Exception as e:
+	if verbosity > 0:
+		print("loading libc functions failed", str(e), file=sys.stderr)
+	pass
 
 resolve_immediately = False
 
