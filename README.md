@@ -9,7 +9,7 @@ to the libcoap functions.
 Dependencies:
 -------------
 
- - [libcoap](https://libcoap.net/)
+ - [libcoap](https://libcoap.net/) (v4.3.5 or higher is recommended)
  - [ifaddr](https://pypi.org/project/ifaddr/) (optional, to query all IPs of an interface)
  - [netifaces](https://pypi.org/project/netifaces/) (optional alternative to ifaddr)
 
