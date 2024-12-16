@@ -1031,37 +1031,6 @@ class CoapContext():
 		await sleep(timeout_ms / 1000)
 		
 		self.fd_timeout_fut = None
-		if self.coap_fd >= 0:
-			self.fd_callback()
-		else:
-			self.fd_ready_cb(None, None)
-	
-	def fd_ready_cb(self, fd, write):
-		if fd:
-			# if we were called by the asyncio loop, set all the requested flags
-			# as we do not get the necessary detailed information from asyncio
-			sock = None
-			for i in range(self.num_sockets.value):
-				if self.coap_sockets[i].contents.fd == fd:
-					sock = self.coap_sockets[i].contents
-					break
-			if sock:
-				if write:
-					if sock.flags & COAP_SOCKET_WANT_WRITE:
-						sock.flags |= COAP_SOCKET_CAN_WRITE
-					if sock.flags & COAP_SOCKET_WANT_CONNECT:
-						sock.flags |= COAP_SOCKET_CAN_CONNECT
-				else:
-					if sock.flags & COAP_SOCKET_WANT_READ:
-						sock.flags |= COAP_SOCKET_CAN_READ
-					if sock.flags & COAP_SOCKET_WANT_ACCEPT:
-						sock.flags |= COAP_SOCKET_CAN_ACCEPT
-			else:
-				print("sock", fd, "not found")
-		
-		now = coap_tick_t()
-		coap_ticks(ct.byref(now))
-		coap_io_do_io(self.lcoap_ctx, now)
 		
 		self.fd_callback()
 	
@@ -1069,71 +1038,58 @@ class CoapContext():
 		if getattr(self, "fd_timeout_fut", False):
 			self.fd_timeout_fut.cancel()
 		
-		now = coap_tick_t()
-		coap_ticks(ct.byref(now))
+		try:
+			self.io_process(COAP_IO_NO_WAIT)
+		except CoapUnexpectedError as e:
+			print("coap_io_process", e)
 		
 		if self.coap_fd >= 0:
-			try:
-				self.io_process(COAP_IO_NO_WAIT)
-			except CoapUnexpectedError as e:
-				print("coap_io_process", e)
+			now = coap_tick_t()
+			coap_ticks(ct.byref(now))
 			
 			timeout_ms = coap_io_prepare_epoll(self.lcoap_ctx, now)
 		else:
-			if not hasattr(self, "coap_reader_fds"):
-				self.coap_reader_fds = {}
-			
 			# get a list of all sockets from libcoap and add them manually to
 			# the asyncio event loop
 			max_sockets = 8;
 			while True:
-				if not getattr(self, "coap_sockets", None):
-					socklist_t = ct.POINTER(coap_socket_t) * max_sockets
-					self.coap_sockets = socklist_t()
-					self.num_sockets = ct.c_uint()
-				timeout_ms = coap_io_prepare_io(self.lcoap_ctx, ct.cast(ct.byref(self.coap_sockets), ct.POINTER(ct.POINTER(coap_socket_t))), max_sockets, ct.byref(self.num_sockets), now)
+				read_fds_t = coap_fd_t * max_sockets
+				write_fds_t = coap_fd_t * max_sockets
+				read_fds = read_fds_t()
+				write_fds = write_fds_t()
+				have_read_fds = ct.c_uint()
+				have_write_fds = ct.c_uint()
+				rem_timeout_ms = ct.c_uint()
 				
-				# check if .coap_sockets was large enough
-				if self.num_sockets.value < max_sockets:
-					new_fds =  {}
-					for i in range(self.num_sockets.value):
-						new_fds[self.coap_sockets[i].contents.fd] = self.coap_sockets[i].contents.flags
-					
-					for old_fd, old_flags in self.coap_reader_fds.items():
-						if old_fd not in new_fds:
-							if (
-								(old_flags & COAP_SOCKET_WANT_READ)
-								or (old_flags & COAP_SOCKET_WANT_ACCEPT)
-								):
-								self._loop.remove_reader(old_fd)
-							if (
-								(old_flags & COAP_SOCKET_WANT_WRITE)
-								or (old_flags & COAP_SOCKET_WANT_CONNECT)
-								):
-								self._loop.remove_writer(old_fd)
-						else:
-							del new_fds[old_fd]
-					
-					# simple helper function to avoid lazy binding problems
-					def create_lambda(new_fd, write):
-						return lambda: self.fd_ready_cb(new_fd, write)
-					
-					for new_fd, flags in new_fds.items():
-						self.coap_reader_fds[new_fd] = flags
-						if (
-							(flags & COAP_SOCKET_WANT_READ)
-							or (flags & COAP_SOCKET_WANT_ACCEPT)
-							):
-							self._loop.add_reader(new_fd, create_lambda(new_fd, False))
-						if (
-							(flags & COAP_SOCKET_WANT_WRITE)
-							or (flags & COAP_SOCKET_WANT_CONNECT)
-							):
-							self._loop.add_writer(new_fd, create_lambda(new_fd, True))
-					break
-				else:
+				coap_io_get_fds(self.lcoap_ctx, 
+					read_fds, ct.byref(have_read_fds), max_sockets,
+					write_fds, ct.byref(have_write_fds), max_sockets,
+					ct.byref(rem_timeout_ms))
+				
+				timeout_ms = rem_timeout_ms.value
+				
+				if have_read_fds.value >= max_sockets or have_write_fds.value >= max_sockets:
 					max_sockets *= 2
-					self.coap_sockets = None
+					continue
+				
+				for i in range(have_read_fds.value):
+					self._loop.add_reader(read_fds[i], self.fd_callback)
+				for i in range(have_write_fds.value):
+					self._loop.add_writer(write_fds[i], self.fd_callback)
+				
+				if hasattr(self, "old_read_fds"):
+					for fd in self.old_read_fds:
+						if fd not in read_fds:
+							self._loop.remove_reader(fd)
+				if hasattr(self, "old_write_fds"):
+					for fd in self.old_write_fds:
+						if fd not in write_fds:
+							self._loop.remove_writer(fd)
+				
+				self.old_read_fds = read_fds
+				self.old_write_fds = write_fds
+				
+				break
 		
 		if timeout_ms > 0:
 			self.fd_timeout_fut = self._loop.create_task(self.fd_timeout_cb(timeout_ms))
