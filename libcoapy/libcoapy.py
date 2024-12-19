@@ -1052,10 +1052,12 @@ class CoapContext():
 		else:
 			# get a list of all sockets from libcoap and add them manually to
 			# the asyncio event loop
-			max_sockets = 8;
+			if not getattr(self, "max_sockets", False):
+				# just guessed values
+				self.max_sockets = 8 + 2 * len(getattr(self, "interfaces", []))
 			while True:
-				read_fds_t = coap_fd_t * max_sockets
-				write_fds_t = coap_fd_t * max_sockets
+				read_fds_t = coap_fd_t * self.max_sockets
+				write_fds_t = coap_fd_t * self.max_sockets
 				read_fds = read_fds_t()
 				write_fds = write_fds_t()
 				have_read_fds = ct.c_uint()
@@ -1063,14 +1065,14 @@ class CoapContext():
 				rem_timeout_ms = ct.c_uint()
 				
 				coap_io_get_fds(self.lcoap_ctx, 
-					read_fds, ct.byref(have_read_fds), max_sockets,
-					write_fds, ct.byref(have_write_fds), max_sockets,
+					read_fds, ct.byref(have_read_fds), self.max_sockets,
+					write_fds, ct.byref(have_write_fds), self.max_sockets,
 					ct.byref(rem_timeout_ms))
 				
 				timeout_ms = rem_timeout_ms.value
 				
-				if have_read_fds.value >= max_sockets or have_write_fds.value >= max_sockets:
-					max_sockets *= 2
+				if have_read_fds.value >= self.max_sockets or have_write_fds.value >= self.max_sockets:
+					self.max_sockets *= 2
 					continue
 				
 				for i in range(have_read_fds.value):
