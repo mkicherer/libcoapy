@@ -23,7 +23,7 @@ coap_context_set_block_mode(ctx, COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY
 
 import socket
 addr_info = coap_resolve_address_info(ct.byref(uri_t.host), uri_t.port, uri_t.port, uri_t.port, uri_t.port,
-	socket.AF_UNSPEC, 1 << uri_t.scheme, coap_resolve_type_t.COAP_RESOLVE_TYPE_REMOTE);
+	0, 1 << uri_t.scheme, coap_resolve_type_t.COAP_RESOLVE_TYPE_REMOTE);
 if not addr_info:
 	print("cannot resolve", uri_str)
 	sys.exit(1)
