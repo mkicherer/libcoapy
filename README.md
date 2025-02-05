@@ -16,8 +16,8 @@ Dependencies:
 Status
 ------
 
-This project is still in early development. Several functions of the libcoap
-library are not yet available and existing high-level libcoapy APIs might change
+The llapi module provides a complete interface for the current version of the libcoap
+library. The high-level API of libcoapy is still missing some parts and might change
 in the future.
 
 Portability
@@ -36,8 +36,10 @@ if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.starts
 	asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 ```
 
-Tools
------
+Provided tools
+--------------
+
+In the examples folder, this repo provides the following general-purpose tools:
 
 * coap-gui - a small Tkinter-based GUI to interact with a CoAP server
 * coarl - a CLI tool that provides a similar interface as [curl](https://curl.se/)
