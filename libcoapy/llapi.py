@@ -3604,6 +3604,8 @@ for ssl_lib in ssl_libs:
 			
 			libnames.append(name)
 
+if os.environ.get("LIBCOAP_PATH", None):
+	libnames.insert(0, os.environ.get("LIBCOAP_PATH"))
 if os.environ.get("LIBCOAPY_LIB", None):
 	libnames.insert(0, os.environ.get("LIBCOAPY_LIB"))
 
