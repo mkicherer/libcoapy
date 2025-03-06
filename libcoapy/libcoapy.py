@@ -449,13 +449,15 @@ class CoapSession():
 		return coap_response_t.COAP_RESPONSE_OK if rv is None else rv
 
 class CoapClientSession(CoapSession):
-	def __init__(self, ctx, uri_str=None, hint=None, key=None, sni=None):
+	def __init__(self, ctx, uri=None, hint=None, key=None, sni=None):
 		super().__init__(ctx)
 		
 		ctx.addSession(self)
 		
-		if uri_str:
-			self.uri = self.ctx.parse_uri(uri_str)
+		if uri:
+			self.uri_str = uri
+			self.uri = self.ctx.parse_uri(uri)
+		if hint or key or sni:
 			self.setup_connection(hint, key, sni)
 	
 	def setup_connection(self, hint=None, key=None, sni=None):
