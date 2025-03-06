@@ -786,9 +786,15 @@ class CoapObserverMultiplier():
 		self.main_observer = main_observer
 		self.sub_observers = []
 		self.waiting = False
+		self.last_pdu = None
 	
 	def getSubObserver(self):
 		self.sub_observers.append( CoapObserver(multiplier=self) )
+		
+		# A regular observer would return the current value immediately. Here,
+		# we simulate this behavior using the last, previously received PDU.
+		if self.last_pdu:
+			self.sub_observers[-1].addResponse(self.last_pdu)
 		
 		return self.sub_observers[-1]
 	
@@ -799,9 +805,13 @@ class CoapObserverMultiplier():
 		if self.waiting:
 			return
 		self.waiting = True
+		
 		rx_pdu = await anext(self.main_observer)
+		self.last_pdu = rx_pdu
+		
 		for ob in self.sub_observers:
 			ob.addResponse(rx_pdu)
+		
 		self.waiting = False
 
 class CoapEndpoint():
