@@ -606,7 +606,9 @@ class CoapClientSession(CoapSession):
 		"""create a PDU with given parameters, send and return it"""
 		
 		if not self.lcoap_session:
-			raise Exception("session not set up")
+			self.setup_connection()
+			if not self.lcoap_session:
+				raise Exception("session not set up")
 		
 		pdu = coap_pdu_init(pdu_type, code, coap_new_message_id(self.lcoap_session), coap_session_max_pdu_size(self.lcoap_session));
 		hl_pdu = CoapPDURequest(pdu, self)
